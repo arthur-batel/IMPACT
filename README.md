@@ -9,7 +9,7 @@ git clone https://github.com/arthur-batel/DBPR.git
 cd DBPR
 make install
 conda activate dbpr-env
-# open one of the notebooks in the experiments/notebook example forlder
+# open one of the notebooks in the experiments/notebook_examples forlder
 ```
 
 ## Training, testing, evaluating the model and running experiments
