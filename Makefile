@@ -6,8 +6,8 @@ install: check_conda
 	unzip -n ./experiments/datasets/data_archive.zip -d ./experiments/datasets/
 	unzip -n ./experiments/embs/embs_archive.zip -d ./experiments/embs/
 	conda init
-	conda env create -f environment.yaml -n dbpr-env \
-  || conda env update -f environment.yaml -n dbpr-env;
+	conda env create -f environment.yaml -n impact-env \
+  || conda env update -f environment.yaml -n impact-env;
 
 clean:
 	rm -rf data/

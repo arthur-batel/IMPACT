@@ -1,4 +1,4 @@
-name: dbpr-env
+name: impact-env
 channels:
   - anaconda
   - conda-forge

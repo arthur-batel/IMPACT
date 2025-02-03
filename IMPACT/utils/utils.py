@@ -12,7 +12,7 @@ import sys
 from datetime import datetime
 from numba import jit
 import numba
-from DBPR import dataset
+from IMPACT import dataset
 
 def setuplogger(verbose: bool = True, log_path: str = "../../experiments/logs/", log_name: str = None):
     root = logging.getLogger()

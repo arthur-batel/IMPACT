@@ -9,7 +9,7 @@ from mailbox import Error
 
 from sklearn.metrics import roc_auc_score, accuracy_score
 
-from DBPR.dataset import *
+from IMPACT.dataset import *
 import torch
 import numpy as np
 from torch.utils import data
@@ -22,7 +22,7 @@ from sklearn.metrics import r2_score
 
 import tkinter as tk
 
-from DBPR.utils import utils
+from IMPACT.utils import utils
 
 config_keys = {
 
@@ -600,10 +600,6 @@ class AbstractModel(ABC):
         self._name = new_value
 
     @abstractmethod
-    def adaptest_update(self, adaptest_data: Dataset):
-        raise NotImplementedError
-
-    @abstractmethod
     def evaluate_valid(self, adaptest_data: Dataset):
         raise NotImplementedError
 
@@ -613,14 +609,6 @@ class AbstractModel(ABC):
 
     @abstractmethod
     def evaluate_emb(self, adaptest_data: Dataset):
-        raise NotImplementedError
-
-    @abstractmethod
-    def adaptest_save(self, path):
-        raise NotImplementedError
-
-    @abstractmethod
-    def adaptest_load(self, path):
         raise NotImplementedError
 
     def _compute_loss(self,user_ids, item_ids, dim_ids,labels):

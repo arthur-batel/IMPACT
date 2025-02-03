@@ -9,8 +9,8 @@ import warnings
 
 from tqdm import tqdm
 
-from DBPR import utils
-from DBPR import dataset
+from IMPACT import utils
+from IMPACT import dataset
 import pandas as pd
 import json
 import cornac

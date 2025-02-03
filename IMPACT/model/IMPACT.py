@@ -6,8 +6,8 @@ import torch.nn as nn
 
 import torch.utils.data as data
 
-from DBPR.model.abstract_model import AbstractContinuousModel
-from DBPR.dataset import *
+from IMPACT.model.abstract_model import AbstractContinuousModel
+from IMPACT.dataset import *
 import torch.nn.functional as F
 
 import warnings
@@ -119,7 +119,7 @@ class CoVWeightingLoss(nn.Module):
 
 
 @torch.jit.export
-class DBPRModel(nn.Module):
+class IMPACTModel(nn.Module):
     '''
     Graph Convolutional Cognitive Diagnostic
     '''
@@ -127,7 +127,7 @@ class DBPRModel(nn.Module):
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, train_data: Dataset,
                  valid_data: Dataset,
                  d_in: int = 3, nb_mod_max: int = 12):
-        super(DBPRModel, self).__init__()
+        super(IMPACTModel, self).__init__()
         self.user_n: int = user_n
         self.item_n: int = item_n
         self.nb_mod_max: int = nb_mod_max  # Discretized responses: 0.0 to 1.0 in steps of 0.1
@@ -266,16 +266,16 @@ class DBPRModel(nn.Module):
         return mod_to_resp(torch.argmin(p_uim + self.mask[item_ids, :], dim=1), self.nb_modalities[item_ids])
 
 
-class DBPR(AbstractContinuousModel):
+class IMPACT(AbstractContinuousModel):
 
     def __init__(self, **config):
-        super().__init__('DBPR', **config)
+        super().__init__('IMPACT', **config)
         self.L_W = torch.jit.script(CoVWeightingLoss(**config))
 
     def init_model(self, train_data: Dataset, valid_data: Dataset):
         self.concept_map = train_data.concept_map
-        self.model = DBPRModel(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
-                               train_data, valid_data, self.config['d_in'], self.config['num_responses'])
+        self.model = IMPACTModel(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
+                                 train_data, valid_data, self.config['d_in'], self.config['num_responses'])
         super().init_model(train_data, valid_data)
 
     def _loss_function(self, pred, real):

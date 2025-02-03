@@ -1,15 +1,15 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='DBPR',
+    name='IMPACT',
     version='0.0.1',
     author='Arthur BATEL',
     author_email='arthur.batel@insa-lyon.fr',
     packages=find_packages(),
-    description=""" DBPR framework """,
+    description=""" IMPACT framework """,
     long_description_content_type="text/markdown",
     long_description=open('README.md').read(),
-    url='https://github.com/arthur-batel/DBPR.git',
+    url='https://github.com/arthur-batel/IMPACT.git',
     install_requires=[
         'torch',
         'vegas',

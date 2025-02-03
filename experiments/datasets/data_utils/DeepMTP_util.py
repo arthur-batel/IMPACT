@@ -8,8 +8,8 @@ from cornac.metrics import MAE, RMSE, RatingMetric
 import numpy as np
 import logging
 import warnings
-from DBPR import utils
-from DBPR import dataset
+from IMPACT import utils
+from IMPACT import dataset
 import pandas as pd
 import json
 from DeepMTP.main import DeepMTP

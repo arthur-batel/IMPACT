@@ -1,14 +1,14 @@
 # An interpretable model for multi-target predictions with multi-class outputs
 
 ---
-This is the official repository of DBPR, a novel interpretable model for Multi-Target Predictions (MTP) with multi-class outputs. The model extends Cognitive Diagnosis Bayesian Personalized Ranking framework to the case of multi-class prediction. The implementatino language is mainly python. It uses pytorch for the implementation of DBPR model itself. This repository contains the four datasets used in the paper, as well jupyter notebooks to re-run the experiments and conduct your own.
+This is the official repository of IMPACT, a novel interpretable model for Multi-Target Predictions (MTP) with multi-class outputs. The model extends Cognitive Diagnosis Bayesian Personalized Ranking framework to the case of multi-class prediction. The implementatino language is mainly python. It uses pytorch for the implementation of IMPACT model itself. This repository contains the four datasets used in the paper, as well jupyter notebooks to re-run the experiments and conduct your own.
 
-## Installing DBPR from source
+## Installing IMPACT from source
 ```bash
-git clone https://github.com/arthur-batel/DBPR.git
-cd DBPR
+git clone https://github.com/arthur-batel/IMPACT.git
+cd IMPACT
 make install
-conda activate dbpr-env
+conda activate impact-env
 # open one of the notebooks in the experiments/notebook_examples forlder
 ```
 
