@@ -254,7 +254,7 @@ class IMPACTModel(nn.Module):
         # I
         im_idx = self.im_idx[item_ids]
         im_emb_prime = self.item_response_embeddings(im_idx)
-        im_emb = im_emb_prime#torch.bmm(im_emb_prime, W_t)
+        im_emb = torch.bmm(im_emb_prime, W_t)
 
         # E
         u_emb = self.users_emb(user_ids)
@@ -394,9 +394,9 @@ def custom_loss(u_emb: torch.Tensor,
                 R: torch.Tensor,
                 users_emb: torch.Tensor,
                 eye: torch.Tensor):
-    im_emb = im_emb_prime# torch.bmm(im_emb_prime, W_t)
-    i0_emb = i0_emb_prime #torch.bmm(i0_emb_prime, W_t)
-    in_emb = in_emb_prime #torch.bmm(in_emb_prime, W_t)
+    im_emb = torch.bmm(im_emb_prime, W_t)
+    i0_emb = torch.bmm(i0_emb_prime, W_t)
+    in_emb = torch.bmm(in_emb_prime, W_t)
 
     diff = u_emb.unsqueeze(1) - im_emb
     diff_2 = i0_emb - im_emb
