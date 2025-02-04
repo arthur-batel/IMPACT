@@ -16,7 +16,7 @@ conda activate impact-env
 - linux OS
 - conda package manager
 - CUDA version >= 12.4
-- **pytorch for CUDA** (to install with pip according for the corresponding CUDA version : [https://pytorch.org/get-started/locally/#linux-anaconda](https://pytorch.org/get-started/locally/))
+- **pytorch for CUDA** (to install with pip according for the corresponding CUDA version : [https://pytorch.org/get-started/locally](https://pytorch.org/get-started/locally/))
 
 ## Training, testing, evaluating the model and running experiments
 
