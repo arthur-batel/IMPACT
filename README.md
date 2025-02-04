@@ -12,6 +12,10 @@ conda activate impact-env
 # open one of the notebooks in the experiments/notebook_examples forlder
 ```
 
+## Prerequisites
+- linux OS
+- conda package manager
+
 ## Training, testing, evaluating the model and running experiments
 
 All examples of how to train, test, evaluate the model and replicate the experiments are in the `experiments/notebook example` folder.
