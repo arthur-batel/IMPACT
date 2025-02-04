@@ -3,7 +3,6 @@ channels:
   - anaconda
   - conda-forge
   - defaults
-  - pytorch
   - nvidia
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
@@ -197,8 +196,6 @@ dependencies:
   - python-json-logger=2.0.7=py311h06a4308_0
   - python-tzdata=2023.3=pyhd3eb1b0_0
   - python_abi=3.11=2_cp311
-  - pytorch=2.2.0=py3.11_cpu_0
-  - pytorch-mutex=1.0=cpu
   - pytz=2023.3.post1=py311h06a4308_0
   - pyyaml=6.0.1=py311h5eee18b_0
   - pyzmq=25.1.2=py311h6a678d5_0
