@@ -15,6 +15,7 @@ conda activate impact-env
 ## Prerequisites
 - linux OS
 - conda package manager
+- CUDA
 
 ## Training, testing, evaluating the model and running experiments
 
