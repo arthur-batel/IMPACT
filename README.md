@@ -12,10 +12,11 @@ conda activate impact-env
 # open one of the notebooks in the experiments/notebook_examples forlder
 ```
 
-## Prerequisites
+## Requirements
 - linux OS
 - conda package manager
-- CUDA
+- CUDA version >= 12.4
+- **pytorch for CUDA** (to install with pip according for the corresponding CUDA version : https://pytorch.org/get-started/locally/#linux-anaconda)
 
 ## Training, testing, evaluating the model and running experiments
 
