@@ -1,1 +1,1 @@
-from .dataset import Dataset, LoaderDataset, AdaptiveDataset
+from .dataset import Dataset, LoaderDataset
