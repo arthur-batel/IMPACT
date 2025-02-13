@@ -83,7 +83,7 @@ def create_q2k(data: pd.DataFrame):
     for i, row in table.iterrows():
         q = row['item_id']
         l = q2k.get(q,[])
-        l.append(row['dimension_id'])
+        l.append(str(row['dimension_id']))
         q2k[q] = l
 
     # get knowledge to item map
@@ -105,7 +105,7 @@ def encode_attr(data: pd.DataFrame, attr:str):
     :return: Encoded DataFrame and mapping from attribute to numerical IDs
     :rtype: pd.DataFrame, Dict[str, int]
     """
-    # renumber the students
+
     attr2n = {}
     cnt = 0
     for i, row in data.iterrows():
@@ -114,7 +114,7 @@ def encode_attr(data: pd.DataFrame, attr:str):
             cnt += 1
 
     data.loc[:, attr] = data.loc[:, attr].apply(lambda x: attr2n[x])
-    return data, attr2n
+    return data.astype({attr:int}), attr2n
 
 
 def parse_data(data):
