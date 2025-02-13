@@ -652,33 +652,31 @@ class AbstractModel(ABC):
 
     @evaluation_state
     def _evaluate(self, data_loader: data.DataLoader):
-        batch_size = self.config['batch_size']
-        device = self.config['device']
-
         loss_list = []
         pred_list = []
         label_list = []
-
+    
         for data_batch in data_loader:
             user_ids = data_batch[:, 0].long()
             item_ids = data_batch[:, 1].long()
             labels = data_batch[:, 2]
             dim_ids = data_batch[:, 3].long()
-
+    
             preds = self.model(user_ids, item_ids, dim_ids)
-
-            loss_list.append(self._loss_function(preds, labels).float())
-
+    
+            loss = self._loss_function(preds, labels).float()
+            loss_list.append(loss)
             pred_list.append(preds.detach())
             label_list.append(labels.detach())
-
+    
+        # Concatenate lists into tensors
+        loss_tensor = torch.stack(loss_list)  # Assumes each loss is a scalar tensor
         pred_tensor = torch.cat(pred_list, dim=0)
         label_tensor = torch.cat(label_list, dim=0)
-            # Convert to CPU if necessary:
-        pred_list = pred_tensor.cpu().tolist()
-        label_list = label_tensor.cpu().tolist()
+        
+        return loss_tensor, pred_tensor, label_tensor
 
-        return loss_list, pred_list, label_list
+
 
     def _save_user_emb(self) -> None :
         path = self.config['embs_path'] +'_'+ self.name + '_fold_' + str(self.fold) + '_seed_' + str(
@@ -760,6 +758,16 @@ class AbstractModel(ABC):
 
 class AbstractContinuousModel(AbstractModel):
 
+    def __init__(self, name: str = None, metrics: list = None, **config):
+        super().__init__(name, **config)
+        self.metrics = metrics if metrics else ['rmse', 'mae', 'r2']
+        assert set(self.metrics).issubset({'rmse', 'mae', 'r2'})
+        self.metric_functions = {
+            'rmse': root_mean_squared_error,
+            'mae': mean_absolute_error,
+            'r2': r2
+        }
+
     def get_user_emb(self):
         if self.state != "model_trained":
             warnings.warn("The model must be trained before getting user embeddings")
@@ -772,15 +780,23 @@ class AbstractContinuousModel(AbstractModel):
 
     def evaluate_test(self, test_dataset: data.DataLoader):
         test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False)
-        loss_list, pred_list, label_list = self._evaluate(test_dataloader)
+        loss_tensor, pred_tensor, label_tensor = self._evaluate(test_dataloader)
+        # Convert tensors to double if needed
+        pred_tensor = pred_tensor.double()
+        label_tensor = label_tensor.double()
+        
+        # Compute metrics in one pass using a dictionary comprehension
+        results = {metric: self.metric_functions[metric](pred_tensor, label_tensor)
+                   for metric in self.metrics}
+        
+        # Optionally keep the predictions and labels as tensors to avoid conversion overhead
+        results.update({
+            'preds': pred_tensor,
+            'labels': label_tensor
+        })
+        
+        return results
 
-        return {
-            'rmse': root_mean_squared_error(torch.tensor(pred_list,dtype=torch.float64), torch.tensor(label_list,dtype=torch.float64)),
-            'mae' : mean_absolute_error(torch.tensor(pred_list,dtype=torch.float64), torch.tensor(label_list,dtype=torch.float64)),
-            'preds': pred_list,
-            'labels': label_list,
-            'r2' : r2(torch.tensor(label_list,dtype=torch.float64),torch.tensor(pred_list,dtype=torch.float64)),
-        }
 
     def evaluate_emb(self, dataloader: dataset.LoaderDataset,concept_map:dict):
 

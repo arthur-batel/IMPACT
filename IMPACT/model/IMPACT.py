@@ -21,26 +21,20 @@ warnings.filterwarnings(
 
 
 class CoVWeightingLoss(nn.Module):
-    def __init__(self, *args, **config):
-        """
-        Initialize the CoVWeightingLoss class.
-
-        Args:
-            device (str): Device to perform computations on ('cpu' or 'cuda').
-        """
-        super().__init__(*args)
+    def __init__(self, device: str):
+        super().__init__() 
         self.nb_losses: int = 2
-        self.device: str = config['device']
+        self.device: str = device
 
         # Initialize tensors for online statistics
         self.t: int = 0  # Time step
         self.mean_L: torch.Tensor = torch.zeros(self.nb_losses, device=self.device)  # Mean of losses
         self.mean_l: torch.Tensor = torch.ones(self.nb_losses, device=self.device)  # Mean of loss ratios
-        self.M2: torch.Tensor = torch.zeros(self.nb_losses,
-                                            device=self.device)  # Sum of squares of differences from the current mean
+        self.M2: torch.Tensor = torch.zeros(self.nb_losses, device=self.device)  # Sum of squares of differences from the current mean
         self.weights: torch.Tensor = torch.tensor([0.5, 0.5], device=self.device)  # Initial weights
 
         self.state: str = "train"  # Initialize state (assuming "train" by default)
+
 
     @torch.jit.export
     def compute_weights(self, loss_values: torch.Tensor) -> torch.Tensor:
@@ -270,7 +264,7 @@ class IMPACT(AbstractContinuousModel):
 
     def __init__(self, **config):
         super().__init__('IMPACT', **config)
-        self.L_W = torch.jit.script(CoVWeightingLoss(**config))
+        self.L_W = torch.jit.script(CoVWeightingLoss(device=config['device']))
 
     def init_model(self, train_data: Dataset, valid_data: Dataset):
         self.concept_map = train_data.concept_map
