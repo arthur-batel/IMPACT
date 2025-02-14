@@ -51,11 +51,6 @@ config_keys = {
     'verbose_early_stopping', # True : loss based early stopping, no log of the loss steps, False : relative rmse and doa improvement
     'esc', # Early Stopping Criterion : ["objectives", "loss"]
 
-    # for NeuralCD
-    'prednet_len1',
-    'prednet_len2',
-    'best_params_path',
-
 }
 
 class AbstractModel(ABC):
