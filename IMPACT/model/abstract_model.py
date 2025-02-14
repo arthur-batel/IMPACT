@@ -908,7 +908,7 @@ def mean_absolute_error(y_true, y_pred):
 
 @torch.jit.script
 def macro_ave_accuracy(y_true, y_pred):
-    return torch.mean(y_true == y_pred)
+    return torch.mean((y_true == y_pred).float())
 
 @torch.jit.script
 def r2(gt, pd):
