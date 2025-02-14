@@ -779,8 +779,7 @@ class AbstractContinuousModel(AbstractModel):
 
         return torch.mean(torch.tensor(loss_list,dtype=torch.float)), root_mean_squared_error(torch.tensor(pred_list,dtype=torch.float), torch.tensor(label_list,dtype=torch.float)) , pred_list
 
-    def evaluate_test(self, test_dataset: data.DataLoader):
-        test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False)
+    def evaluate_test(self, test_dataloader: data.DataLoader):
         loss_tensor, pred_tensor, label_tensor = self._evaluate(test_dataloader)
         # Convert tensors to double if needed
         pred_tensor = pred_tensor.double()
