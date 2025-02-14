@@ -6,7 +6,7 @@ import torch.nn as nn
 
 import torch.utils.data as data
 
-from IMPACT.model.abstract_model import AbstractContinuousModel
+from IMPACT.model.abstract_model import AbstractContinuousModel, root_mean_squared_error, macro_ave_accuracy
 from IMPACT.dataset import *
 import torch.nn.functional as F
 
@@ -265,6 +265,11 @@ class IMPACT(AbstractContinuousModel):
     def __init__(self, **config):
         super().__init__('IMPACT', **config)
         self.L_W = torch.jit.script(CoVWeightingLoss(device=config['device']))
+        match config['valid_metric']:
+            case 'rmse':
+                self.valid_metric = root_mean_squared_error
+            case 'ma_acc':
+                self.valid_metric = macro_ave_accuracy
 
     def init_model(self, train_data: Dataset, valid_data: Dataset):
         self.concept_map = train_data.concept_map
@@ -330,9 +335,8 @@ class IMPACT(AbstractContinuousModel):
         pred_tensor = torch.cat(pred_list)
         label_tensor = torch.cat(label_list)
         mean_loss = torch.mean(torch.stack(loss_list))
-        rmse = root_mean_squared_error(pred_tensor, label_tensor)
 
-        return mean_loss, rmse
+        return mean_loss, self.valid_metric(pred_tensor, label_tensor)
 
     def _compute_loss(self, users_id, items_id, concepts_id, labels):
         device = self.config['device']
@@ -442,11 +446,6 @@ def custom_loss(u_emb: torch.Tensor,
 
     L3 = torch.clamp(q_val, min=0.0).mean()
     return L1, L2, L3
-
-
-@torch.jit.script
-def root_mean_squared_error(y_true: torch.Tensor, y_pred: torch.Tensor):
-    return torch.sqrt(torch.mean(torch.square(y_true - y_pred)))
 
 
 @torch.jit.script
