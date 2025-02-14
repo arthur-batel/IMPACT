@@ -377,7 +377,7 @@ class AbstractModel(ABC):
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if (self.best_valid_metric-valid_rmse) / abs(self.best_valid_metric) > 0.001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.001:
+                    if (self.best_valid_metric-valid_metric) / abs(self.best_valid_metric) > 0.001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.001:
                         self.best_epoch = ep
                         self.best_valid_metric = valid_metric
                         self.best_model_params = self.model.state_dict()
@@ -419,7 +419,7 @@ class AbstractModel(ABC):
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if self.best_valid_metric > valid_rmse:#(self.best_valid_metric - valid_rmse) / abs(self.best_valid_metric) > 0.001:
+                    if self.best_valid_metric > valid_metric:#(self.best_valid_metric - valid_rmse) / abs(self.best_valid_metric) > 0.001:
                         self.best_epoch = ep
                         self.best_valid_metric = valid_metric
                         self.best_model_params = self.model.state_dict()
@@ -469,7 +469,7 @@ class AbstractModel(ABC):
                         valid_doa = valid_doa[valid_doa != 0].mean()
 
                     # Checking loss improvement
-                    if (self.best_valid_metric - valid_rmse) / abs(self.best_valid_metric) > 0.0001 or \
+                    if (self.best_valid_metric - valid_metric) / abs(self.best_valid_metric) > 0.0001 or \
                             (valid_doa - self.best_valid_doa) / abs(self.best_valid_doa) > 0.0001:
                         self.best_epoch = ep
                         self.best_valid_loss = valid_loss
@@ -483,7 +483,7 @@ class AbstractModel(ABC):
                         'Epoch [{}] \n- Losses : train={:.4f}, valid={:.4f}, best_valid={:.4f} \n- {}   :       -       '
                         'valid={:.4f},  best_valid_metric={:.4f}\n- DOA    :       -       '
                         'valid={:.4f},  best_valid_doa={:.4f}'.format(
-                            ep, train_loss, valid_loss, self.best_valid_loss, valid_rmse, self.config['valid_metric'], self.best_valid_metric,
+                            ep, train_loss, valid_loss, self.best_valid_loss, valid_metric, self.config['valid_metric'], self.best_valid_metric,
                             valid_doa, self.best_valid_doa))
 
                     if ep - self.best_epoch >= patience:
@@ -518,13 +518,13 @@ class AbstractModel(ABC):
             # Early stopping
             if (ep + 1) % eval_freq == 0:
                 with torch.no_grad(), torch.amp.autocast('cuda'):
-                    valid_loss, valid_rmse,valid_mae = self.evaluate_valid(valid_loader, valid_data.log_tensor)
+                    valid_loss, valid_metric,valid_mae = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     with warnings.catch_warnings(record=True) as w:
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if (self.best_valid_metric-valid_rmse) / abs(self.best_valid_metric) > 0.0001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.0001:
+                    if (self.best_valid_metric-valid_metric) / abs(self.best_valid_metric) > 0.0001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.0001:
                         self.best_epoch = ep
                         self.best_valid_metric = valid_metric
                         self.best_valid_mae = valid_mae
@@ -567,15 +567,15 @@ class AbstractModel(ABC):
         #     logging.info(params_path)
         #     logging.info(emb_path)
 
-    def _tensorboard_saving(self, train_loss, valid_loss, valid_rmse, ep):
+    def _tensorboard_saving(self, train_loss, valid_loss, valid_metric, ep):
         self.writer.add_scalars(f'{self.name}_{self.timestamp}_Loss',
                                 {f'Train_{self.fold}': train_loss, f'Valid_{self.fold}': valid_loss}, ep)
-        self.writer.add_scalars(f'{self.name}_{self.timestamp}_RMSE', {f'Valid_{self.fold}': valid_rmse}, ep)
+        self.writer.add_scalars(f'{self.name}_{self.timestamp}_RMSE', {f'Valid_{self.fold}': valid_metric}, ep)
 
-    def _flush_tensorboard_saving(self, train_loss, valid_loss, valid_rmse,valid_mae, ep):
+    def _flush_tensorboard_saving(self, train_loss, valid_loss, valid_metric,valid_mae, ep):
         self.writer.add_scalars(f'DBPR_Loss',
                                 {f'Train_{self.name}': train_loss, f'Valid_{self.name}': valid_loss}, ep)
-        self.writer.add_scalars(f'DBPR_pred', {f'Valid_rmse_{self.name}': valid_rmse,f'Valid_mae_{self.name}': valid_mae}, ep)
+        self.writer.add_scalars(f'DBPR_pred', {f'Valid_rmse_{self.name}': valid_metric,f'Valid_mae_{self.name}': valid_mae}, ep)
         self.writer.flush()
 
     def init_model(self, train_data: Dataset, valid_data : Dataset):
