@@ -265,11 +265,6 @@ class IMPACT(AbstractContinuousModel):
     def __init__(self, **config):
         super().__init__('IMPACT', **config)
         self.L_W = torch.jit.script(CoVWeightingLoss(device=config['device']))
-        match config['valid_metric']:
-            case 'rmse':
-                self.valid_metric = root_mean_squared_error
-            case 'ma_acc':
-                self.valid_metric = macro_ave_accuracy
 
     def init_model(self, train_data: Dataset, valid_data: Dataset):
         self.concept_map = train_data.concept_map

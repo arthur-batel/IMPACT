@@ -120,6 +120,12 @@ class AbstractModel(ABC):
         else :
             self._train_method = self._train_no_early_stopping
 
+        match config['valid_metric']:
+            case 'rmse':
+                self.valid_metric = root_mean_squared_error
+            case 'ma_acc':
+                self.valid_metric = macro_ave_accuracy
+
 
     def train(self, train_data: Dataset, valid_data: Dataset):
         """Train the model."""
@@ -140,9 +146,8 @@ class AbstractModel(ABC):
 
         self.best_epoch = 0
         self.best_valid_loss = 100000
-        self.best_valid_rmse = 100000
-        self.best_valid_mae = 100000
-        self.best_valid_doa = -100000
+        self.best_valid_metric = 100000
+
         self.best_model_params = self.model.state_dict()
 
         train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, pin_memory=False)
@@ -226,14 +231,13 @@ class AbstractModel(ABC):
             # Early stopping
             if (ep + 1) % eval_freq == 0:
                 with torch.no_grad(), torch.amp.autocast('cuda'):
-                    valid_loss, valid_rmse,valid_mae = self.evaluate_valid(valid_loader, valid_data.log_tensor)
+                    valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     # Checking loss improvement
                     if self.best_valid_loss > valid_loss :
                         self.best_epoch = ep
-                        self.best_valid_rmse = valid_rmse
+                        self.best_valid_metric = valid_metric
                         self.best_valid_loss = valid_loss
-                        self.best_valid_mae = valid_mae
                         self.best_model_params = self.model.state_dict()
 
                         scheduler.step(valid_loss)
@@ -273,23 +277,21 @@ class AbstractModel(ABC):
             if (ep + 1) % eval_freq == 0:
                 with torch.no_grad(), torch.amp.autocast('cuda'):
                     train_loss = np.mean(loss_list)
-                    valid_loss, valid_rmse,valid_mae = self.evaluate_valid(valid_loader, valid_data.log_tensor)
+                    valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     # Checking loss improvement
                     if valid_loss < self.best_valid_loss:
                         self.best_epoch = ep
-                        self.best_valid_rmse = valid_rmse
+                        self.best_valid_metric = valid_metric
                         self.best_valid_loss = valid_loss
-                        self.best_valid_mae = valid_mae
                         self.best_model_params = self.model.state_dict()
 
                         scheduler.step(valid_loss)
 
                     logging.info(
-                        'Epoch [{}] \n- Losses : train={:.4f}, valid={:.4f}, best_valid={:.4f} \n- RMSE   :       -       '
-                        'valid={:.4f},  best_valid_rmse={:.4f}\n- DOA    :       -       '
-                        'valid={:.4f},  best_valid_doa={:.4f}'.format(
-                            ep, train_loss, valid_loss, self.best_valid_loss, valid_rmse, self.best_valid_rmse,
+                        'Epoch [{}] \n- Losses : train={:.4f}, valid={:.4f}, best_valid={:.4f} \n- {}   :       -       '
+                        'valid={:.4f}'.format(
+                            ep, train_loss, valid_loss,  self.best_valid_loss,self.config['valid_metric'], valid_metric, self.best_valid_metric,
                             -1, self.best_valid_doa))
 
                     if ep - self.best_epoch >= patience:
@@ -324,16 +326,16 @@ class AbstractModel(ABC):
             # Early stopping
             if (ep + 1) % eval_freq == 0:
                 with torch.no_grad(), torch.amp.autocast('cuda'):
-                    valid_loss, valid_rmse = self.evaluate_valid(valid_loader, valid_data.log_tensor)
+                    valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
                     with warnings.catch_warnings(record=True) as w:
                         warnings.simplefilter("always")
                         valid_doa = compute_pc_er(self.model.concept_n,self.U_mean,self.get_user_emb())
                         valid_doa = valid_doa[valid_doa != 0].mean()
 
-                    if (self.best_valid_rmse > valid_rmse) or (valid_doa > self.best_valid_doa) :
+                    if (self.best_valid_metric > valid_metric) or (valid_doa > self.best_valid_doa) :
                         self.best_epoch = ep
                         self.best_valid_loss = valid_loss
-                        self.best_valid_rmse = valid_rmse
+                        self.best_valid_metric = valid_metric
                         self.best_valid_doa = valid_doa
                         self.best_model_params = self.model.state_dict()
 
@@ -369,16 +371,15 @@ class AbstractModel(ABC):
             # Early stopping
             if (ep + 1) % eval_freq == 0:
                 with torch.no_grad(), torch.amp.autocast('cuda'):
-                    valid_loss, valid_rmse,valid_mae = self.evaluate_valid(valid_loader, valid_data.log_tensor)
+                    valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     with warnings.catch_warnings(record=True) as w:
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if (self.best_valid_rmse-valid_rmse) / abs(self.best_valid_rmse) > 0.001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.001:
+                    if (self.best_valid_metric-valid_rmse) / abs(self.best_valid_metric) > 0.001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.001:
                         self.best_epoch = ep
-                        self.best_valid_rmse = valid_rmse
-                        self.best_valid_mae = valid_mae
+                        self.best_valid_metric = valid_metric
                         self.best_model_params = self.model.state_dict()
 
                         scheduler.step(valid_loss)
@@ -412,15 +413,15 @@ class AbstractModel(ABC):
             # Early stopping
             if (ep + 1) % eval_freq == 0:
                 with torch.no_grad(), torch.amp.autocast('cuda'):
-                    valid_loss, valid_rmse = self.evaluate_valid(valid_loader, valid_data.log_tensor)
+                    valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     with warnings.catch_warnings(record=True) as w:
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if self.best_valid_rmse > valid_rmse:#(self.best_valid_rmse - valid_rmse) / abs(self.best_valid_rmse) > 0.001:
+                    if self.best_valid_metric > valid_rmse:#(self.best_valid_metric - valid_rmse) / abs(self.best_valid_metric) > 0.001:
                         self.best_epoch = ep
-                        self.best_valid_rmse = valid_rmse
+                        self.best_valid_metric = valid_metric
                         self.best_model_params = self.model.state_dict()
 
                         scheduler.step(valid_loss)
@@ -460,7 +461,7 @@ class AbstractModel(ABC):
             if (ep + 1) % eval_freq == 0:
                 with torch.no_grad(), torch.amp.autocast('cuda'):
                     train_loss = np.mean(loss_list)
-                    valid_loss, valid_rmse,valid_mae = self.evaluate_valid(valid_loader, valid_data.log_tensor)
+                    valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
                     with warnings.catch_warnings(record=True) as w:
                         warnings.simplefilter("always")
                         valid_doa = utils.evaluate_doa(self.get_user_emb().cpu().numpy(), valid_data.log_tensor.numpy(),
@@ -468,22 +469,21 @@ class AbstractModel(ABC):
                         valid_doa = valid_doa[valid_doa != 0].mean()
 
                     # Checking loss improvement
-                    if (self.best_valid_rmse - valid_rmse) / abs(self.best_valid_rmse) > 0.0001 or \
+                    if (self.best_valid_metric - valid_rmse) / abs(self.best_valid_metric) > 0.0001 or \
                             (valid_doa - self.best_valid_doa) / abs(self.best_valid_doa) > 0.0001:
                         self.best_epoch = ep
                         self.best_valid_loss = valid_loss
-                        self.best_valid_rmse = valid_rmse
+                        self.best_valid_metric = valid_metric
                         self.best_valid_doa = valid_doa
-                        self.best_valid_mae = valid_mae
                         self.best_model_params = self.model.state_dict()
 
                         scheduler.step(valid_loss)
 
                     logging.info(
-                        'Epoch [{}] \n- Losses : train={:.4f}, valid={:.4f}, best_valid={:.4f} \n- RMSE   :       -       '
-                        'valid={:.4f},  best_valid_rmse={:.4f}\n- DOA    :       -       '
+                        'Epoch [{}] \n- Losses : train={:.4f}, valid={:.4f}, best_valid={:.4f} \n- {}   :       -       '
+                        'valid={:.4f},  best_valid_metric={:.4f}\n- DOA    :       -       '
                         'valid={:.4f},  best_valid_doa={:.4f}'.format(
-                            ep, train_loss, valid_loss, self.best_valid_loss, valid_rmse, self.best_valid_rmse,
+                            ep, train_loss, valid_loss, self.best_valid_loss, valid_rmse, self.config['valid_metric'], self.best_valid_metric,
                             valid_doa, self.best_valid_doa))
 
                     if ep - self.best_epoch >= patience:
@@ -524,9 +524,9 @@ class AbstractModel(ABC):
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if (self.best_valid_rmse-valid_rmse) / abs(self.best_valid_rmse) > 0.0001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.0001:
+                    if (self.best_valid_metric-valid_rmse) / abs(self.best_valid_metric) > 0.0001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.0001:
                         self.best_epoch = ep
-                        self.best_valid_rmse = valid_rmse
+                        self.best_valid_metric = valid_metric
                         self.best_valid_mae = valid_mae
                         self.best_model_params = self.model.state_dict()
 
