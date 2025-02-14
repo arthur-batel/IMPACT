@@ -760,12 +760,13 @@ class AbstractContinuousModel(AbstractModel):
 
     def __init__(self, name: str = None, metrics: list = None, **config):
         super().__init__(name, **config)
-        self.metrics = metrics if metrics else ['rmse', 'mae', 'r2']
-        assert set(self.metrics).issubset({'rmse', 'mae', 'r2'})
+        self.metrics = metrics if metrics else ['rmse', 'mae']
+        assert set(self.metrics).issubset({'rmse', 'mae', 'r2','ma_acc'})
         self.metric_functions = {
             'rmse': root_mean_squared_error,
             'mae': mean_absolute_error,
-            'r2': r2
+            'r2': r2,
+            'ma_acc':macro_ave_accuracy
         }
 
     def get_user_emb(self):
@@ -907,6 +908,10 @@ def root_mean_squared_error(y_true, y_pred):
 @torch.jit.script
 def mean_absolute_error(y_true, y_pred):
     return torch.mean(torch.abs(y_true - y_pred))
+
+@torch.jit.script
+def macro_ave_accuracy(y_true, y_pred):
+    return torch.mean((y_true == y_pred))
 
 @torch.jit.script
 def r2(gt, pd):
