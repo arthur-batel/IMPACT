@@ -91,27 +91,29 @@ class AbstractModel(ABC):
         # Decide on training method
         if self.config['early_stopping']:
 
-            # Decide on the level of verbosity
+           # Decide on the level of verbosity
             if self.config['verbose_early_stopping']:
-                if self.config['esc'] == 'objectives':
-                    self._train_method = self._verbose_train_early_stopping_objectives
-                elif self.config['esc'] == 'loss':
-                    self._train_method = self._verbose_train_early_stopping_loss
-                else:
-                    logging.warning("Loss improvement selected by default as early stopping criterion  ")
-                    self._train_method = self._verbose_train_early_stopping_loss
+                match self.config['esc']:
+                    case 'objectives':
+                        self._train_method = self._verbose_train_early_stopping_objectives
+                    case 'loss':
+                        self._train_method = self._verbose_train_early_stopping_loss
+                    case _:
+                        logging.warning("Loss improvement selected by default as early stopping criterion")
+                        self._train_method = self._verbose_train_early_stopping_loss
             else:
-                if self.config['esc'] == 'objectives':
-                    self._train_method = self._train_early_stopping_objectives
-                elif self.config['esc'] == 'delta_error':
-                    self._train_method = self._train_early_stopping_delta_error
-                elif self.config['esc'] == 'error':
-                    self._train_method = self._train_early_stopping_error
-                elif self.config['esc'] == 'loss':
-                    self._train_method = self._train_early_stopping_loss
-                else:
-                    logging.warning("Loss improvement selected by default as early stopping criterion  ")
-                    self._train_method = self._train_early_stopping_loss
+                match self.config['esc']:
+                    case 'objectives':
+                        self._train_method = self._train_early_stopping_objectives
+                    case 'delta_error':
+                        self._train_method = self._train_early_stopping_delta_error
+                    case 'error':
+                        self._train_method = self._train_early_stopping_error
+                    case 'loss':
+                        self._train_method = self._train_early_stopping_loss
+                    case _:
+                        logging.warning("Loss improvement selected by default as early stopping criterion")
+                        self._train_method = self._train_early_stopping_loss
 
 
             # Decide on the early stopping criterion
