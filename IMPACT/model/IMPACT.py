@@ -6,7 +6,7 @@ import torch.nn as nn
 
 import torch.utils.data as data
 
-from IMPACT.model.abstract_model import AbstractContinuousModel, root_mean_squared_error, macro_ave_accuracy
+from IMPACT.model.abstract_model import AbstractContinuousModel
 from IMPACT.dataset import *
 import torch.nn.functional as F
 
