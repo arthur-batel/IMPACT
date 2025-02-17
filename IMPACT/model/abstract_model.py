@@ -98,6 +98,8 @@ class AbstractModel(ABC):
                         self._train_method = self._verbose_train_early_stopping_objectives
                     case 'loss':
                         self._train_method = self._verbose_train_early_stopping_loss
+                    case 'delta_error':
+                        self._train_method = self._verbose_train_early_stopping_delta_error
                     case _:
                         logging.warning("Loss improvement selected by default as early stopping criterion")
                         self._train_method = self._verbose_train_early_stopping_loss
@@ -132,8 +134,10 @@ class AbstractModel(ABC):
         match config['valid_metric']:
             case 'rmse':
                 self.valid_metric = root_mean_squared_error
+                self.metric_sign = 1
             case 'ma_acc':
                 self.valid_metric = macro_ave_accuracy
+                self.metric_sign = -1
 
 
     def train(self, train_data: Dataset, valid_data: Dataset):
@@ -341,7 +345,7 @@ class AbstractModel(ABC):
                         valid_doa = compute_pc_er(self.model.concept_n,self.U_mean,self.get_user_emb())
                         valid_doa = valid_doa[valid_doa != 0].mean()
 
-                    if (self.best_valid_metric > valid_metric) or (valid_doa > self.best_valid_doa) :
+                    if (self.metric_sign * self.best_valid_metric > self.metric_sign * valid_metric) or (valid_doa > self.best_valid_doa) :
                         self.best_epoch = ep
                         self.best_valid_loss = valid_loss
                         self.best_valid_metric = valid_metric
@@ -386,7 +390,7 @@ class AbstractModel(ABC):
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if (self.best_valid_metric-valid_metric) / abs(self.best_valid_metric) > 0.001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.001:
+                    if self.metric_sign * (self.best_valid_metric-valid_metric) / abs(self.best_valid_metric) > 0.001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.001:
                         self.best_epoch = ep
                         self.best_valid_metric = valid_metric
                         self.best_model_params = self.model.state_dict()
@@ -428,7 +432,7 @@ class AbstractModel(ABC):
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if self.best_valid_metric > valid_metric:#(self.best_valid_metric - valid_rmse) / abs(self.best_valid_metric) > 0.001:
+                    if self.metric_sign * self.best_valid_metric > self.metric_sign * valid_metric:#(self.best_valid_metric - valid_rmse) / abs(self.best_valid_metric) > 0.001:
                         self.best_epoch = ep
                         self.best_valid_metric = valid_metric
                         self.best_model_params = self.model.state_dict()
@@ -478,7 +482,7 @@ class AbstractModel(ABC):
                         valid_doa = valid_doa[valid_doa != 0].mean()
 
                     # Checking loss improvement
-                    if (self.best_valid_metric - valid_metric) / abs(self.best_valid_metric) > 0.0001 or \
+                    if self.metric_sign * (self.best_valid_metric - valid_metric) / abs(self.best_valid_metric) > 0.0001 or \
                             (valid_doa - self.best_valid_doa) / abs(self.best_valid_doa) > 0.0001:
                         self.best_epoch = ep
                         self.best_valid_loss = valid_loss
@@ -533,7 +537,7 @@ class AbstractModel(ABC):
                         warnings.simplefilter("always")
 
                     # Checking loss improvement
-                    if (self.best_valid_metric-valid_metric) / abs(self.best_valid_metric) > 0.0001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.0001:
+                    if self.metric_sign * (self.best_valid_metric-valid_metric) / abs(self.best_valid_metric) > 0.0001 or (self.best_valid_mae - valid_mae) / abs(self.best_valid_mae) > 0.0001:
                         self.best_epoch = ep
                         self.best_valid_metric = valid_metric
                         self.best_valid_mae = valid_mae
@@ -909,6 +913,9 @@ def mean_absolute_error(y_true, y_pred):
 
 @torch.jit.script
 def macro_ave_accuracy(y_true, y_pred):
+    print("true",y_true[:10])
+    print("pred",y_pred[:10])
+    print("verif",(y_true == y_pred).float()[:10])
     return torch.mean((y_true == y_pred).float())
 
 @torch.jit.script
