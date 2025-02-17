@@ -570,13 +570,14 @@ def custom_loss_low_mem(u_emb: torch.Tensor,
     L2 = torch.where(diff_mask2 == 1, F.softplus(diffs3 - diffs2), torch.zeros_like(diff_mask2)).mean(dim=1).mean()
 
     ##### L3
-    b = (R[users_id, items_id].unsqueeze(1) - R[users_id][:, items_id].t())
+    R_t = R[users_id][:, items_id].t()
+    b = (R[users_id, items_id].unsqueeze(1) - R_t)
 
     diag_offset = 2.0 * eye
     b_diag = b.abs() + diag_offset
 
     v_mask = concepts_id.unsqueeze(0).eq(concepts_id.unsqueeze(1))  # same concept checking
-    u_mask = v_mask & (b_diag > 0.0) & (b_diag < 1.0)  # b_diag > 0 : not ewactly similar responses; b_diag < 1.0
+    u_mask = v_mask & (b_diag > 0.0) & (R_t >= 1.0)  # b_diag > 0 : not ewactly similar responses; R_t >= 1.0 : comparison with not null responses
 
     indices = torch.nonzero(u_mask)
     u_base_idx = indices[:, 0]
@@ -639,13 +640,14 @@ def custom_loss(u_emb: torch.Tensor,
     L2 = torch.where(diff_mask2 == 1, F.softplus(diffs3 - diffs2), torch.zeros_like(diff_mask2)).mean(dim=1).mean()
 
     ##### L3
-    b = (R[users_id, items_id].unsqueeze(1) - R[users_id][:, items_id].t())
+    R_t = R[users_id][:, items_id].t()
+    b = (R[users_id, items_id].unsqueeze(1) - R_t)
 
     diag_offset = 2.0 * eye
     b_diag = b.abs() + diag_offset
 
     v_mask = concepts_id.unsqueeze(0).eq(concepts_id.unsqueeze(1))  # same concept checking
-    u_mask = v_mask & (b_diag > 0.0) & (b_diag < 1.0)  # b_diag > 0 : not ewactly similar responses; b_diag < 1.0
+    u_mask = v_mask & (b_diag > 0.0) & (R_t >= 1.0)  # b_diag > 0 : not ewactly similar responses; R_t >= 1.0 : comparison with not null responses
 
     indices = torch.nonzero(u_mask)
     u_base_idx = indices[:, 0]
