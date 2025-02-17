@@ -97,10 +97,13 @@ class AbstractModel(ABC):
                 match self.config['esc']:
                     case 'objectives':
                         self._train_method = self._verbose_train_early_stopping_objectives
-                    case 'loss':
-                        self._train_method = self._verbose_train_early_stopping_loss
                     case 'delta_error':
                         self._train_method = self._verbose_train_early_stopping_delta_error
+                    case 'error':
+                        self._train_method = self._verbose_train_early_stopping_error
+                    case 'loss':
+                        self._train_method = self._verbose_train_early_stopping_loss
+
                     case _:
                         logging.warning("Loss improvement selected by default as early stopping criterion")
                         self._train_method = self._verbose_train_early_stopping_loss
@@ -318,6 +321,11 @@ class AbstractModel(ABC):
                         break
 
         self.model.load_state_dict(self.best_model_params)
+
+
+    def _verbose_train_early_stopping_error(self, train_loader, valid_loader, valid_data, optimizer, scheduler,
+                                          scaler):
+        raise NotImplementedError
 
 
     def _train_early_stopping_objectives(self, train_loader, valid_loader, valid_data, optimizer, scheduler, scaler):
