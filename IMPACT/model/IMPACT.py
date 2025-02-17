@@ -500,8 +500,7 @@ class IMPACT(AbstractContinuousModel):
                                  diff_mask=self.model.diff_mask[items_id],
                                  diff_mask2=self.model.diff_mask2[items_id],
                                  users_id=users_id, items_id=items_id,
-                                 concepts_id=concepts_id, R=self.model.R, users_emb=self.model.users_emb.weight,
-                                 eye=torch.eye(users_id.shape[0], device=device))
+                                 concepts_id=concepts_id, R=self.model.R, users_emb=self.model.users_emb.weight)
 
         R = self.model.get_regularizer()
 
@@ -535,8 +534,7 @@ def custom_loss_low_mem(u_emb: torch.Tensor,
                         items_id: torch.Tensor,
                         concepts_id: torch.Tensor,
                         R: torch.Tensor,
-                        users_emb: torch.Tensor,
-                        eye: torch.Tensor):
+                        users_emb: torch.Tensor):
     im_emb = torch.bmm(im_emb_prime, W_t)
     i0_emb = torch.bmm(i0_emb_prime, W_t)
     in_emb = torch.bmm(in_emb_prime, W_t)
@@ -573,12 +571,11 @@ def custom_loss_low_mem(u_emb: torch.Tensor,
     R_t = R[users_id][:, items_id].t()
     b = (R[users_id, items_id].unsqueeze(1) - R_t)
 
-    diag_offset = 2.0 * eye
-    b_diag = b.abs() + diag_offset
+    b_diag = b.abs()
 
     v_mask = concepts_id.unsqueeze(0).eq(concepts_id.unsqueeze(1))  # same concept checking
-    u_mask = v_mask & (b_diag > 0.0) & (R_t >= 1.0)  # b_diag > 0 : not ewactly similar responses; R_t >= 1.0 : comparison with not null responses
-
+    u_mask = v_mask & (b_diag > 0.0) & (R_t >= 1.0)   # b_diag > 0 : not exactly similar responses for which we cannot say anything; R_t >= 1.0 : comparison with not null responses only
+    
     indices = torch.nonzero(u_mask)
     u_base_idx = indices[:, 0]
     u_comp_idx = indices[:, 1]
@@ -607,8 +604,7 @@ def custom_loss(u_emb: torch.Tensor,
                         items_id: torch.Tensor,
                         concepts_id: torch.Tensor,
                         R: torch.Tensor,
-                        users_emb: torch.Tensor,
-                        eye: torch.Tensor):
+                        users_emb: torch.Tensor):
 
 
     diff = u_emb.unsqueeze(1) - im_emb_prime
@@ -643,11 +639,10 @@ def custom_loss(u_emb: torch.Tensor,
     R_t = R[users_id][:, items_id].t()
     b = (R[users_id, items_id].unsqueeze(1) - R_t)
 
-    diag_offset = 2.0 * eye
-    b_diag = b.abs() + diag_offset
+    b_diag = b.abs()
 
     v_mask = concepts_id.unsqueeze(0).eq(concepts_id.unsqueeze(1))  # same concept checking
-    u_mask = v_mask & (b_diag > 0.0) & (R_t >= 1.0)  # b_diag > 0 : not ewactly similar responses; R_t >= 1.0 : comparison with not null responses
+    u_mask = v_mask & (b_diag > 0.0) & (R_t >= 1.0)   # b_diag > 0 : not exactly similar responses for which we cannot say anything; R_t >= 1.0 : comparison with not null responses only
 
     indices = torch.nonzero(u_mask)
     u_base_idx = indices[:, 0]
