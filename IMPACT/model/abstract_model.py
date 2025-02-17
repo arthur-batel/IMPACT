@@ -123,7 +123,6 @@ class AbstractModel(ABC):
             self._train_method = self._train_no_early_stopping
 
         self.metrics = config['metrics'] if config['metrics'] else ['rmse', 'mae']
-        assert set(self.metrics).issubset({'rmse', 'mae', 'r2','mi_acc'})
         self.metric_functions = {
             'rmse': root_mean_squared_error,
             'mae': mean_absolute_error,
@@ -134,10 +133,14 @@ class AbstractModel(ABC):
             'mi_f1': micro_ave_f1,
             'mi_auc': micro_ave_auc,
         }
+        assert set(self.metrics).issubset(self.metric_functions.keys())
 
         match config['valid_metric']:
             case 'rmse':
                 self.valid_metric = root_mean_squared_error
+                self.metric_sign = 1 # Metric to minimize :1; metric to maximize :-1
+            case 'mae':
+                self.valid_metric = mean_absolute_error
                 self.metric_sign = 1
             case 'mi_acc':
                 self.valid_metric = micro_ave_accuracy
@@ -1018,7 +1021,7 @@ def micro_ave_f1(y_true, y_pred):
     recall = micro_ave_recall(y_true, y_pred)
     return 2 * (precision * recall) / (precision + recall)
 
-def micro_ave_roc_auc(y_true, y_pred):
+def micro_ave_auc(y_true, y_pred):
     """
     Compute the micro-averaged roc-auc (Binary classification)
 
@@ -1029,8 +1032,8 @@ def micro_ave_roc_auc(y_true, y_pred):
     Returns:
         Tensor: The micro-averaged roc-auc.
     """
-    y_true = y_true.cpu().numpy()
-    y_pred = y_pred.cpu().numpy()
+    y_true = y_true.cpu().int().numpy()
+    y_pred = y_pred.cpu().int().numpy()
     roc_auc = roc_auc_score(y_true.ravel(), y_pred.ravel(), average='micro')
     return torch.tensor(roc_auc)
 
