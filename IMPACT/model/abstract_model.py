@@ -24,44 +24,12 @@ import tkinter as tk
 
 from IMPACT.utils import utils
 
-config_keys = {
-
-    # General params
-    'seed',
-
-    # Saving params
-    'load_params',
-    'save_params',
-    'embs_path' ,
-    'params_path' ,
-
-    # Training params
-    'seed',
-    'learning_rate',
-    'batch_size',
-    'num_epochs',
-    'num_dim',
-    'eval_freq',
-    'patience',
-    'device',
-    'lambda' ,
-    'tensorboard',
-    'flush_freq',
-    'early_stopping',
-    'verbose_early_stopping', # True : loss based early stopping, no log of the loss steps, False : relative rmse and doa improvement
-    'esc', # Early Stopping Criterion : ["objectives", "loss"]
-
-}
 
 class AbstractModel(ABC):
     def __init__(self, name: str = None, **config):
         super().__init__()
 
         utils.set_seed(config['seed'])
-
-        if not config_keys.issubset(config.keys()):
-            missing_keys = [key for key in config_keys if key not in config]
-            raise ValueError(f"Missing config keys: {missing_keys}")
 
         self.config = config
         self._name = name
