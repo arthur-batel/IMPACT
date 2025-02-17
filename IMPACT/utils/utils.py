@@ -615,8 +615,8 @@ def _compute_doa(q, q_len, num_dim, E, concept_map_array, R, num_user):
     return s / beta
 
 
-def generate_hs_config(seed: int = 0, load_params: bool = False, save_params: bool = False, embs_path: str = '../embs/' + str(dataset_name),
-                    params_path: str = '../ckpt/' + str(dataset_name), early_stopping: bool = True, esc: str = 'error', verbose_early_stopping: str = False, disable_tqdm: bool = True,
+def generate_hs_config(dataset_name:str=None, seed: int = 0, load_params: bool = False, save_params: bool = False, embs_path: str = '../embs/',
+                    params_path: str = '../ckpt/', early_stopping: bool = True, esc: str = 'error', verbose_early_stopping: str = False, disable_tqdm: bool = True,
                     valid_metric: str = 'rmse', learning_rate: float = 0.001, batch_size: int = 2048, num_epochs: int = 200, eval_freq: int = 1, patience: int = 30,
                     device: str = None, lambda_: float = 7.7e-6, tensorboard: bool = False, flush_freq: bool = True, metrics: list = ['rmse'],
                     num_responses: int = 12, low_mem: bool = False) -> dict:
@@ -624,11 +624,12 @@ def generate_hs_config(seed: int = 0, load_params: bool = False, save_params: bo
     Generate a configuration dictionary for the model hyperparameter search process.
 
     Args:
+        dataset_name (str): Name of the dataset. Default is None.
         seed (int): Random seed for reproducibility. Default is 0.
         load_params (bool): Whether to load model parameters from a file. Default is False.
         save_params (bool): Whether to save model parameters to a file. Default is False.
-        embs_path (str): Path to the directory where embeddings will be saved. Default is '../embs/' + str(dataset_name).
-        params_path (str): Path to the directory where model parameters will be saved. Default is '../ckpt/' + str(dataset_name).
+        embs_path (str): Path to the directory where embeddings will be saved. Default is '../embs/'.
+        params_path (str): Path to the directory where model parameters will be saved. Default is '../ckpt/'.
         early_stopping (bool): Whether to use early stopping during training. Default is True.
         esc (str): Early stopping criterion. Possible values: 'error', 'loss', 'delta_error', 'objectives'. Default is 'error'.
         verbose_early_stopping (str): Whether to print model learning statistics during training (frequency = eval_freq). Default is False.
@@ -660,6 +661,7 @@ def generate_hs_config(seed: int = 0, load_params: bool = False, save_params: bo
     config = {
         # General params
         'seed': seed,
+        'dataset_name': dataset_name,
 
         # Saving params
         'load_params': load_params,
@@ -694,8 +696,8 @@ def generate_hs_config(seed: int = 0, load_params: bool = False, save_params: bo
     }
     return config
 
-def generate_eval_config(seed: int = 0, load_params: bool = False, save_params: bool = True, embs_path: str = '../embs/' + str(dataset_name),
-                    params_path: str = '../ckpt/' + str(dataset_name), early_stopping: bool = True, esc: str = 'error', verbose_early_stopping: str = False, disable_tqdm: bool = True,
+def generate_eval_config(dataset_name:str=None,seed: int = 0, load_params: bool = False, save_params: bool = True, embs_path: str = '../embs/' ,
+                    params_path: str = '../ckpt/', early_stopping: bool = True, esc: str = 'error', verbose_early_stopping: str = False, disable_tqdm: bool = True,
                     valid_metric: str = 'rmse', learning_rate: float = 0.001, batch_size: int = 2048, num_epochs: int = 200, eval_freq: int = 1, patience: int = 30,
                     device: str = None, lambda_: float = 7.7e-6, tensorboard: bool = False, flush_freq: bool = True, metrics: list = ['rmse', 'mae', 'r2'],
                     num_responses: int = 12, low_mem: bool = False) -> dict:
@@ -703,11 +705,12 @@ def generate_eval_config(seed: int = 0, load_params: bool = False, save_params: 
     Generate a configuration dictionary for the model evaluation.
 
     Args:
+        dataset_name (str): Name of the dataset. Default is None.
         seed (int): Random seed for reproducibility. Default is 0.
         load_params (bool): Whether to load model parameters from a file. Default is False.
         save_params (bool): Whether to save model parameters to a file. Default is True.
-        embs_path (str): Path to the directory where embeddings will be saved. Default is '../embs/' + str(dataset_name).
-        params_path (str): Path to the directory where model parameters will be saved. Default is '../ckpt/' + str(dataset_name).
+        embs_path (str): Path to the directory where embeddings will be saved. Default is '../embs/'.
+        params_path (str): Path to the directory where model parameters will be saved. Default is '../ckpt/'.
         early_stopping (bool): Whether to use early stopping during training. Default is True.
         esc (str): Early stopping criterion. Possible values: 'error', 'loss', 'delta_error', 'objectives'. Default is 'error'.
         verbose_early_stopping (str): Whether to print model learning statistics during training (frequency = eval_freq). Default is False.
@@ -738,6 +741,7 @@ def generate_eval_config(seed: int = 0, load_params: bool = False, save_params: 
             print("CUDA is not available. Using CPU.")
     config = {
         # General params
+        'dataset_name': dataset_name,
         'seed': seed,
 
         # Saving params
