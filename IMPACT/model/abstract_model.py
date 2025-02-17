@@ -93,6 +93,7 @@ class AbstractModel(ABC):
 
            # Decide on the level of verbosity
             if self.config['verbose_early_stopping']:
+                # Decide on the early stopping criterion
                 match self.config['esc']:
                     case 'objectives':
                         self._train_method = self._verbose_train_early_stopping_objectives
@@ -104,6 +105,7 @@ class AbstractModel(ABC):
                         logging.warning("Loss improvement selected by default as early stopping criterion")
                         self._train_method = self._verbose_train_early_stopping_loss
             else:
+                # Decide on the early stopping criterion
                 match self.config['esc']:
                     case 'objectives':
                         self._train_method = self._train_early_stopping_objectives
@@ -117,26 +119,28 @@ class AbstractModel(ABC):
                         logging.warning("Loss improvement selected by default as early stopping criterion")
                         self._train_method = self._train_early_stopping_loss
 
-
-            # Decide on the early stopping criterion
         else :
             self._train_method = self._train_no_early_stopping
 
         self.metrics = config['metrics'] if config['metrics'] else ['rmse', 'mae']
-        assert set(self.metrics).issubset({'rmse', 'mae', 'r2','ma_acc'})
+        assert set(self.metrics).issubset({'rmse', 'mae', 'r2','mi_acc'})
         self.metric_functions = {
             'rmse': root_mean_squared_error,
             'mae': mean_absolute_error,
             'r2': r2,
-            'ma_acc':macro_ave_accuracy
+            'mi_acc':micro_ave_accuracy,
+            'mi_prec': micro_ave_precision,
+            'mi_rec': micro_ave_recall,
+            'mi_f1': micro_ave_f1,
+            'mi_auc': micro_ave_auc,
         }
 
         match config['valid_metric']:
             case 'rmse':
                 self.valid_metric = root_mean_squared_error
                 self.metric_sign = 1
-            case 'ma_acc':
-                self.valid_metric = macro_ave_accuracy
+            case 'mi_acc':
+                self.valid_metric = micro_ave_accuracy
                 self.metric_sign = -1
 
 
@@ -905,18 +909,44 @@ def compute_pc_er(concept_n: int, U_ave: torch.Tensor, emb: torch.Tensor) -> tor
 
 @torch.jit.script
 def root_mean_squared_error(y_true, y_pred):
+    """
+    Compute the rmse metric (Regression)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The rmse metric.
+    """
     return torch.sqrt(torch.mean(torch.square(y_true - y_pred)))
 
 @torch.jit.script
 def mean_absolute_error(y_true, y_pred):
+    """
+    Compute the mae metric (Regression)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The mae metric.
+    """
     return torch.mean(torch.abs(y_true - y_pred))
 
 @torch.jit.script
-def macro_ave_accuracy(y_true, y_pred):
-    return torch.mean((y_true == y_pred).float())
-
-@torch.jit.script
 def r2(gt, pd):
+    """
+    Compute the r2 metric (Regression)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The r2 metric.
+    """
 
     mean = torch.mean(gt)
     sst = torch.sum(torch.square(gt - mean))
@@ -925,3 +955,82 @@ def r2(gt, pd):
     r2 = 1 - sse / sst
 
     return r2
+
+@torch.jit.script
+def micro_ave_accuracy(y_true, y_pred):
+    """
+    Compute the micro-averaged accuracy (Classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    return torch.mean((y_true == y_pred).float())
+
+@torch.jit.script
+def micro_ave_precision(y_true, y_pred):
+    """
+    Compute the micro-averaged precision (Binary classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
+    predicted_positives = torch.sum(y_pred == 2).float()
+    return true_positives / predicted_positives
+
+@torch.jit.script
+def micro_ave_recall(y_true, y_pred):
+    """
+    Compute the micro-averaged recall (Binary classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged recall.
+    """
+    true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
+    actual_positives = torch.sum(y_true == 2).float()
+    return true_positives / actual_positives
+
+@torch.jit.script
+def micro_ave_f1(y_true, y_pred):
+    """
+    Compute the micro-averaged f1 (Binary classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged f1.
+    """
+    precision = micro_ave_precision(y_true, y_pred)
+    recall = micro_ave_recall(y_true, y_pred)
+    return 2 * (precision * recall) / (precision + recall)
+
+def micro_ave_roc_auc(y_true, y_pred):
+    """
+    Compute the micro-averaged roc-auc (Binary classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged roc-auc.
+    """
+    y_true = y_true.cpu().numpy()
+    y_pred = y_pred.cpu().numpy()
+    roc_auc = roc_auc_score(y_true.ravel(), y_pred.ravel(), average='micro')
+    return torch.tensor(roc_auc)
+
