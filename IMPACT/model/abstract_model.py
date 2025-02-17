@@ -159,7 +159,7 @@ class AbstractModel(ABC):
 
         self.best_epoch = 0
         self.best_valid_loss = 100000
-        self.best_valid_metric = 100000
+        self.best_valid_metric = self.metric_sign* 100000
 
         self.best_model_params = self.model.state_dict()
 
