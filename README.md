@@ -25,7 +25,7 @@ conda activate impact-env
     - `experiments/embs/` : Folder for user embeddings saving
     - `experiments/hyperparam_search/` : Contains the csv files of the optimal hyperparameter for each method (obtained with Tree-structured Parzen Estimator (TPE) sampler)
     - `experiments/logs/` : Folder for running logs saving
-    - `experiments/notebook_example/` : Contains the jupyter notebooks to run the experiments of the scientific paper.
+    - `experiments/notebook_example/` : Contains the jupyter notebooks to run the experiments of the scientific paper, including competitors. 
     - `experiments/preds/` : Folder for predictions saving
     - `experiments/tensorboard/` : Folder for tensorboard data saving
 - `figs/` : Contains the figures of the paper
