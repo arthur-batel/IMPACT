@@ -18,11 +18,21 @@ conda activate impact-env
 - CUDA version >= 12.4
 - **pytorch for CUDA** (to install with pip in accordance with your CUDA version : [https://pytorch.org/get-started/locally](https://pytorch.org/get-started/locally/))
 
-## Training, testing, evaluating the model and running experiments
-
-All examples of how to train, test, evaluate the model and replicate the experiments are in the `experiments/notebook example` folder.
-
-
+## Repository map
+- `experiments/` : Contains the jupyter notebooks and datasets to run the experiments of the scientific paper.
+    - `experiments/ckpt/` : Folder for models parameter saving
+    - `experiments/datasets/` : Contains the raw and pre-processed datasets, as well as there pre-processing jupyter notebook
+    - `experiments/embs/` : Folder for user embeddings saving
+    - `experiments/hyperparam_search/` : Contains the csv files of the optimal hyperparameter for each method (obtained with Tree-structured Parzen Estimator (TPE) sampler)
+    - `experiments/logs/` : Folder for running logs saving
+    - `experiments/notebook_example/` : Contains the jupyter notebooks to run the experiments of the scientific paper.
+    - `experiments/preds/` : Folder for predictions saving
+    - `experiments/tensorboard/` : Folder for tensorboard data saving
+- `figs/` : Contains the figures of the paper
+- `IMPACT/` : Contains the source code of the IMPACT model
+  - `IMPACT/dataset/` : Contains the code of the dataset class
+  - `IMPACT/models/` : Contains the code of the **IMPACT model** and its abstract class, handling the learning process
+  - `IMPACT/utils/` : Contains utility functions for logging, complex metric computations, configuration handling, etc.
 ## Authors
 
 Arthur Batel,
