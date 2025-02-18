@@ -81,9 +81,9 @@ def create_q2k(data: pd.DataFrame):
     q2k = {}
     table = data.drop_duplicates(subset=["dimension_id","item_id"])
     for i, row in table.iterrows():
-        q = row['item_id']
+        q = int(row['item_id'])
         l = q2k.get(q,[])
-        l.append(str(row['dimension_id']))
+        l.append(str(int(row['dimension_id'])))
         q2k[q] = l
 
     # get knowledge to item map
