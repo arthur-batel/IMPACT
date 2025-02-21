@@ -6,7 +6,7 @@ import torch.nn as nn
 
 import torch.utils.data as data
 
-from IMPACT.model.abstract_model import AbstractContinuousModel
+from IMPACT.model.abstract_model import AbstractModel
 from IMPACT.dataset import *
 import torch.nn.functional as F
 
@@ -403,7 +403,7 @@ class IMPACTModel_low_mem(nn.Module):
 
 
 
-class IMPACT(AbstractContinuousModel):
+class IMPACT(AbstractModel):
 
     def __init__(self, **config):
         super().__init__('IMPACT', **config)
@@ -457,7 +457,7 @@ class IMPACT(AbstractContinuousModel):
         return wrapper
 
     @evaluation_param
-    @AbstractContinuousModel.evaluation_state
+    @AbstractModel.evaluation_state
     def evaluate_valid(self, valid_dataloader: data.DataLoader, valid_tensor):
 
         loss_list = []

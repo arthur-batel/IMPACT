@@ -592,18 +592,6 @@ class AbstractModel(ABC):
     def name(self, new_value):
         self._name = new_value
 
-    @abstractmethod
-    def evaluate_valid(self, adaptest_data: Dataset):
-        raise NotImplementedError
-
-    @abstractmethod
-    def evaluate_predictions(self, adaptest_data: Dataset):
-        raise NotImplementedError
-
-    @abstractmethod
-    def evaluate_profiles(self, adaptest_data: Dataset):
-        raise NotImplementedError
-
     def _compute_loss(self,user_ids, item_ids, dim_ids,labels):
         pred = self.model(user_ids, item_ids, dim_ids)
         loss = self._loss_function(pred, labels)
@@ -748,11 +736,6 @@ class AbstractModel(ABC):
     def _dont_load_button(self):
         self.config["load_params"] = False
         logging.info("You chose not to load previously saved parameters.")
-
-class AbstractContinuousModel(AbstractModel):
-
-    def __init__(self, name: str = None, **config):
-        super().__init__(name, **config)
 
     def get_user_emb(self):
         if self.state != "model_trained":
