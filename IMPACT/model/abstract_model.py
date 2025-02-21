@@ -93,7 +93,7 @@ class AbstractModel(ABC):
         else :
             self._train_method = self._train_no_early_stopping
 
-        self.metrics = config['metrics'] if config['metrics'] else ['rmse', 'mae']
+        self.metrics = config['pred_metrics'] if config['pred_metrics'] else ['rmse', 'mae']
         self.metric_functions = {
             'rmse': root_mean_squared_error,
             'mae': mean_absolute_error,
@@ -597,11 +597,11 @@ class AbstractModel(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def evaluate_test(self, adaptest_data: Dataset):
+    def evaluate_predictions(self, adaptest_data: Dataset):
         raise NotImplementedError
 
     @abstractmethod
-    def evaluate_emb(self, adaptest_data: Dataset):
+    def evaluate_profiles(self, adaptest_data: Dataset):
         raise NotImplementedError
 
     def _compute_loss(self,user_ids, item_ids, dim_ids,labels):
@@ -761,10 +761,9 @@ class AbstractContinuousModel(AbstractModel):
     def evaluate_valid(self, valid_dataloader: data.DataLoader,log_tensor):
         loss_list, pred_list, label_list = self._evaluate(valid_dataloader)
 
-
         return torch.mean(torch.tensor(loss_list,dtype=torch.float)), root_mean_squared_error(torch.tensor(pred_list,dtype=torch.float), torch.tensor(label_list,dtype=torch.float)) , pred_list
 
-    def evaluate_test(self, test_dataset: data.DataLoader):
+    def evaluate_predictions(self, test_dataset: data.DataLoader):
         test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False)
         loss_tensor, pred_tensor, label_tensor = self._evaluate(test_dataloader)
         # Convert tensors to double if needed
@@ -772,7 +771,7 @@ class AbstractContinuousModel(AbstractModel):
         label_tensor = label_tensor.double()
         
         # Compute metrics in one pass using a dictionary comprehension
-        results = {metric: self.metric_functions[metric](pred_tensor, label_tensor)
+        results = {metric: self.metric_functions[metric](pred_tensor, label_tensor).cpu().item()
                    for metric in self.metrics}
         
         # Optionally keep the predictions and labels as tensors to avoid conversion overhead
@@ -783,8 +782,7 @@ class AbstractContinuousModel(AbstractModel):
         
         return results
 
-
-    def evaluate_emb(self, dataloader: dataset.LoaderDataset,concept_map:dict):
+    def evaluate_profiles(self, dataloader: dataset.LoaderDataset, concept_map:dict):
 
         device = self.config['device']
 

@@ -618,7 +618,7 @@ def _compute_doa(q, q_len, num_dim, E, concept_map_array, R, num_user):
 def generate_hs_config(dataset_name:str=None, seed: int = 0, load_params: bool = False, save_params: bool = False, embs_path: str = '../embs/',
                     params_path: str = '../ckpt/', early_stopping: bool = True, esc: str = 'error', verbose_early_stopping: str = False, disable_tqdm: bool = True,
                     valid_metric: str = 'rmse', learning_rate: float = 0.001, batch_size: int = 2048, num_epochs: int = 200, eval_freq: int = 1, patience: int = 30,
-                    device: str = None, lambda_: float = 7.7e-6, tensorboard: bool = False, flush_freq: bool = True, metrics: list = ['rmse'],
+                    device: str = None, lambda_: float = 7.7e-6, tensorboard: bool = False, flush_freq: bool = True, pred_metrics: list = ['rmse'],
                     num_responses: int = 12, low_mem: bool = False) -> dict:
     """
     Generate a configuration dictionary for the model hyperparameter search process.
@@ -644,7 +644,7 @@ def generate_hs_config(dataset_name:str=None, seed: int = 0, load_params: bool =
         lambda_ (float): Regularization parameter. Default is 7.7e-6.
         tensorboard (bool): Whether to use TensorBoard for logging. Default is False.
         flush_freq (bool): Whether to flush the TensorBoard logs frequently. Default is True.
-        metrics (list): List of prediction metrics to be used for evaluation. Possible list elements: 'rmse', 'mae', 'r2', 'mi_acc', 'mi_prec', 'mi_rec', 'mi_f1', 'mi_auc' (mi = micro-averaged). Default is ['rmse', 'mae'].
+        pred_metrics (list): List of prediction metrics to be used for evaluation. Possible list elements: 'rmse', 'mae', 'r2', 'mi_acc', 'mi_prec', 'mi_rec', 'mi_f1', 'mi_auc' (mi = micro-averaged). Default is ['rmse', 'mae'].
         num_responses (int): Number of responses IMPACT will use for each question in the case of dataset with continuous values. For discrete datasets, num_responses is the MAXIMUM number of responses IMPACT will use for each question. Default is 12.
         low_mem (bool): Whether to enable low memory mode for IMPACT with vector subspaces for question-response embeddings. Default is False.
 
@@ -688,7 +688,7 @@ def generate_hs_config(dataset_name:str=None, seed: int = 0, load_params: bool =
         'flush_freq': flush_freq,
 
         # Evaluation params
-        'metrics': metrics,
+        'pred_metrics': pred_metrics,
 
         # IMPACT specific params
         'num_responses': num_responses,
@@ -697,9 +697,9 @@ def generate_hs_config(dataset_name:str=None, seed: int = 0, load_params: bool =
     return config
 
 def generate_eval_config(dataset_name:str=None,seed: int = 0, load_params: bool = False, save_params: bool = True, embs_path: str = '../embs/' ,
-                    params_path: str = '../ckpt/', early_stopping: bool = True, esc: str = 'error', verbose_early_stopping: str = False, disable_tqdm: bool = True,
+                    params_path: str = '../ckpt/', early_stopping: bool = True, esc: str = 'error', verbose_early_stopping: str = False, disable_tqdm: bool = False,
                     valid_metric: str = 'rmse', learning_rate: float = 0.001, batch_size: int = 2048, num_epochs: int = 200, eval_freq: int = 1, patience: int = 30,
-                    device: str = None, lambda_: float = 7.7e-6, tensorboard: bool = False, flush_freq: bool = True, metrics: list = ['rmse', 'mae', 'r2'],
+                    device: str = None, lambda_: float = 7.7e-6, tensorboard: bool = False, flush_freq: bool = True, pred_metrics: list = ['rmse', 'mae', 'r2'],
                     num_responses: int = 12, low_mem: bool = False) -> dict:
     """
     Generate a configuration dictionary for the model evaluation.
@@ -714,7 +714,7 @@ def generate_eval_config(dataset_name:str=None,seed: int = 0, load_params: bool 
         early_stopping (bool): Whether to use early stopping during training. Default is True.
         esc (str): Early stopping criterion. Possible values: 'error', 'loss', 'delta_error', 'objectives'. Default is 'error'.
         verbose_early_stopping (str): Whether to print model learning statistics during training (frequency = eval_freq). Default is False.
-        disable_tqdm (bool): Whether to disable tqdm progress bars. Default is True.
+        disable_tqdm (bool): Whether to disable tqdm progress bars. Default is False.
         valid_metric (str): Metric to be used for hyperparameters selection on the valid dataset (including early stopping). Possible values: 'rmse', 'mae', 'mi_acc'. Default is 'rmse'.
         learning_rate (float): Learning rate for the optimizer. Default is 0.001.
         batch_size (int): Batch size for training. Default is 2048.
@@ -725,7 +725,7 @@ def generate_eval_config(dataset_name:str=None,seed: int = 0, load_params: bool 
         lambda_ (float): Regularization parameter. Default is 7.7e-6.
         tensorboard (bool): Whether to use TensorBoard for logging. Default is False.
         flush_freq (bool): Whether to flush the TensorBoard logs frequently. Default is True.
-        metrics (list): List of prediction metrics to be used for evaluation. Possible list elements: 'rmse', 'mae', 'r2', 'mi_acc', 'mi_prec', 'mi_rec', 'mi_f1', 'mi_auc' (mi = micro-averaged). Default is ['rmse', 'mae'].
+        pred_metrics (list): List of prediction metrics to be used for evaluation. Possible list elements: 'rmse', 'mae', 'r2', 'mi_acc', 'mi_prec', 'mi_rec', 'mi_f1', 'mi_auc' (mi = micro-averaged). Default is ['rmse', 'mae'].
         num_responses (int): Number of responses IMPACT will use for each question in the case of dataset with continuous values. For discrete datasets, num_responses is the MAXIMUM number of responses IMPACT will use for each question. Default is 12.
         low_mem (bool): Whether to enable low memory mode for IMPACT with vector subspaces for question-response embeddings. Default is False.
 
@@ -769,7 +769,7 @@ def generate_eval_config(dataset_name:str=None,seed: int = 0, load_params: bool 
         'flush_freq': flush_freq,
 
         # Evaluation params
-        'metrics': metrics,
+        'pred_metrics': pred_metrics,
 
         # IMPACT specific params
         'num_responses': num_responses,
@@ -777,3 +777,44 @@ def generate_eval_config(dataset_name:str=None,seed: int = 0, load_params: bool 
     }
     return config
 
+def prepare_dataset(config: dict, i_fold:int=0) :
+    """
+    Prepare the dataset for training, validation, and testing.
+
+    Args:
+        config (dict): Configuration dictionary containing dataset name and other parameters.
+        i_fold (int): Fold number for cross-validation. Default is 0.
+
+    Returns:
+        tuple: A tuple containing:
+            - concept_map (dict): A dictionary mapping question IDs to lists of category IDs.
+            - train_data (LoaderDataset): Training dataset.
+            - valid_data (LoaderDataset): Validation dataset.
+            - test_data (LoaderDataset): Testing dataset.
+    """
+    ## Concept map format : {question_id : [category_id1, category_id2, ...]}
+    concept_map = json.load(open(f'../datasets/{config["dataset_name"]}/concept_map.json', 'r'))
+    concept_map = {int(k): [int(x) for x in v] for k, v in concept_map.items()}
+
+    ## Metadata map format : {"num_user_id": ..., "num_item_id": ..., "num_dimension_id": ...}
+    metadata = json.load(open(f'../datasets/{config["dataset_name"]}/metadata.json', 'r'))
+
+    ## Quadruplets format : (user_id, question_id, response, category_id)
+    train_quadruplets = pd.read_csv(
+        f'../datasets/2-preprocessed_data/{config["dataset_name"]}_train_quadruples_vert_{i_fold}.csv',
+        encoding='utf-8').to_records(index=False, column_dtypes={'student_id': int, 'item_id': int, "correct": float,
+                                                                 "dimension_id": int})
+    valid_quadruplets = pd.read_csv(
+        f'../datasets/2-preprocessed_data/{config["dataset_name"]}_valid_quadruples_vert_{i_fold}.csv',
+        encoding='utf-8').to_records(index=False, column_dtypes={'student_id': int, 'item_id': int, "correct": float,
+                                                                 "dimension_id": int})
+    test_quadruplets = pd.read_csv(
+        f'../datasets/2-preprocessed_data/{config["dataset_name"]}_test_quadruples_vert_{i_fold}.csv',
+        encoding='utf-8').to_records(index=False, column_dtypes={'student_id': int, 'item_id': int, "correct": float,
+                                                                 "dimension_id": int})
+
+    train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata)
+    valid_data = dataset.LoaderDataset(valid_quadruplets, concept_map, metadata)
+    test_data = dataset.LoaderDataset(test_quadruplets, concept_map, metadata)
+
+    return concept_map, train_data, valid_data, test_data
