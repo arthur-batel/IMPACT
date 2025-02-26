@@ -9,7 +9,7 @@ git clone https://github.com/arthur-batel/IMPACT.git
 cd IMPACT
 make install
 conda activate impact-env
-# open one of the notebooks in the experiments/notebook_examples forlder
+# open one of the notebooks in the experiments/notebook_examples folder
 ```
 
 ## Requirements
@@ -17,6 +17,32 @@ conda activate impact-env
 - conda package manager
 - CUDA version >= 12.4
 - **pytorch for CUDA** (to install with pip in accordance with your CUDA version : [https://pytorch.org/get-started/locally](https://pytorch.org/get-started/locally/))
+
+## IMPACT in few lines of code
+```python
+from IMPACT import utils, model, dataset
+
+# Set all the required parameters ---------------
+config = utils.generate_eval_config(dataset_name="postcovid", learning_rate=0.02026, lambda_=1.2e-5, batch_size=2048, num_epochs=200,
+                                    valid_metric='rmse', pred_metrics=['rmse', 'mae'], profile_metrics=['doa', 'pc-er'])
+
+# Read the dataset and the metadata -------------
+concept_map, train_data, valid_data, test_data = utils.prepare_dataset(config, i_fold=0)
+
+# Train the model --------------------------------
+algo = model.IMPACT(**config)
+algo.init_model(train_data, valid_data)
+algo.train(train_data, valid_data)
+
+# Test the model --------------------------------
+eval = algo.evaluate_predictions(test_data)
+print("rmse :", eval["rmse"])
+print("mae :", eval["mae"])
+
+eval = algo.evaluate_profiles(test_data)
+print("pc-er:", eval["pc-er"])
+print("doa:", eval["doa"])
+```
 
 ## Repository map
 - `experiments/` : Contains the jupyter notebooks and datasets to run the experiments of the scientific paper.
