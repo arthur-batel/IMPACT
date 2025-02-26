@@ -38,13 +38,11 @@ algo.init_model(train_data, valid_data)
 algo.train(train_data, valid_data)
 
 # Test the model --------------------------------
-eval = algo.evaluate_predictions(test_data)
-print("rmse :", eval["rmse"])
-print("mae :", eval["mae"])
+eval_preds = algo.evaluate_predictions(test_data)
+eval_profiles = algo.evaluate_profiles(test_data)
 
-eval = algo.evaluate_profiles(test_data)
-print("pc-er:", eval["pc-er"])
-print("doa:", eval["doa"])
+print("Evaluation of the predictions :",eval_preds)
+print("Evaluation of the profiles :",eval_profiles)
 ```
 
 ## Repository map
