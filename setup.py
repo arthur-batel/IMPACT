@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name='IMPACT',
-    version='0.0.1',
+    version='2.0.0',
     author='Arthur BATEL',
     author_email='arthur.batel@insa-lyon.fr',
     packages=find_packages(),
-    description=""" IMPACT framework """,
+    description=""" IMPACT framework for interpretable multi-target prediction for multi-class outputs""",
     long_description_content_type="text/markdown",
     long_description=open('README.md').read(),
     url='https://github.com/arthur-batel/IMPACT.git',
