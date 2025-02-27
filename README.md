@@ -4,7 +4,7 @@
 <h1 align="center"> An interpretable model for multi-target predictions with multi-class outputs </h1>
 
 ---
-This is the official repository of IMPACT, a novel interpretable model for Multi-Target Predictions (MTP) with multi-class outputs. The model extends Cognitive Diagnosis Bayesian Personalized Ranking framework to the case of multi-class prediction. The implementation language is mainly python. Pytorch library is used for the IMPACT model itself. This repository contains the four datasets used in the paper, as well jupyter notebooks to re-run the experiments and conduct your own.
+Welcome to the official repository for IMPACT – a novel, interpretable model designed for Multi-Target Predictions (MTP) with multi-class outputs. IMPACT extends the Cognitive Diagnosis Bayesian Personalized Ranking framework to effectively handle multi-class prediction tasks. Built primarily in Python using PyTorch, this repository includes the four datasets featured in our publication, along with Jupyter notebooks that allow you to reproduce our experiments and conduct your own analyses.
 
 ## Installing IMPACT
 From source
