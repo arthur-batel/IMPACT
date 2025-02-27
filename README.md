@@ -6,13 +6,18 @@
 ---
 This is the official repository of IMPACT, a novel interpretable model for Multi-Target Predictions (MTP) with multi-class outputs. The model extends Cognitive Diagnosis Bayesian Personalized Ranking framework to the case of multi-class prediction. The implementatino language is mainly python. It uses pytorch for the implementation of IMPACT model itself. This repository contains the four datasets used in the paper, as well jupyter notebooks to re-run the experiments and conduct your own.
 
-## Installing IMPACT from source
+## Installing IMPACT
+From source
 ```bash
 git clone https://github.com/arthur-batel/IMPACT.git
 cd IMPACT
 make install
 conda activate impact-env
 # open one of the notebooks in the experiments/notebook_examples folder
+```
+Or directly from pip
+```bash
+pip install impact-liris
 ```
 
 ## Requirements
