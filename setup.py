@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='IMPACT',
+    name='impact-liris',
     version='2.0.0',
     author='Arthur BATEL',
     author_email='arthur.batel@insa-lyon.fr',
     packages=find_packages(),
-    description=""" IMPACT framework for interpretable multi-target prediction for multi-class outputs""",
+    description="""IMPACT framework, an interpretable multi-target framework for multi-class outputs""",
     long_description_content_type="text/markdown",
     long_description=open('README.md').read(),
     url='https://github.com/arthur-batel/IMPACT.git',
@@ -14,6 +14,7 @@ setup(
         'torch',
         'vegas',
         'numpy',
+        'pandas',
         'scikit-learn',
         'scipy',
         'tqdm',
@@ -23,6 +24,10 @@ setup(
     entry_points={
     },
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.11",
+        "Environment :: GPU :: NVIDIA CUDA",
     ],
+    python_requires='>=3.6',
 )
