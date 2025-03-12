@@ -9,7 +9,8 @@ Welcome to the official repository for IMPACT – a novel, interpretable model d
 ## Installing IMPACT
 Directly from pip
 ```bash
-pip install impact-liris
+pip install lirisimpact
+import IMPACT
 ```
 Or from source for developers
 ```bash
