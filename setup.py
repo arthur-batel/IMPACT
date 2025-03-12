@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='impact-liris',
-    version='2.0.0',
+    name='lirisimpact',
+    version='2.0.2',
     author='Arthur BATEL',
     author_email='arthur.batel@insa-lyon.fr',
     packages=find_packages(),

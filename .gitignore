@@ -8,4 +8,4 @@ experiment/datasets/__pycache__/
 experiment/datasets/data_utils/__pycache__/
 build/
 dist/
-impact_liris.egg-info/
+*.egg-info/

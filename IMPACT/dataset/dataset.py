@@ -103,12 +103,14 @@ class Dataset(object):
         """
         @return: An array containing the raw data (shape = (self.n_logs,3)).
         """
+
         if self._raw_data_array is None:
             self._raw_data_array = self._generate_raw_data_array()
         return self._raw_data_array
 
     @property
     def log_tensor(self):
+
         return self._log_tensor
 
     @property
