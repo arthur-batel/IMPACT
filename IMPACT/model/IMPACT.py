@@ -129,7 +129,7 @@ class IMPACTModel(nn.Module):
 
         # Register R as a buffer to ensure it's on the correct device
         self.register_buffer('R', train_data.log_tensor)
-        self.register_buffer('R_valid', valid_data.log_tensor)
+
         self.device = self.R.device
 
         # ------ Declare learnable parameters
@@ -179,7 +179,7 @@ class IMPACTModel(nn.Module):
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
         R_t = self.R.clone()
-        R_t[R_t == 0] = self.R_valid[R_t == 0]
+        R_t[R_t == 0] = valid_data.log_tensor[R_t == 0]
         R_t = R_t.T - 1
         self.register_buffer('nb_modalities',
                              torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
@@ -214,7 +214,6 @@ class IMPACTModel(nn.Module):
             1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1)
 
         self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities))
-        self.register_buffer('ir_idx_valid', resp_to_mod(self.R_valid, self.nb_modalities))
 
     def get_embeddings(self, user_ids, item_ids, concept_ids):
         # User embeddings
@@ -269,7 +268,6 @@ class IMPACTModel_low_mem(nn.Module):
 
         # Register R as a buffer to ensure it's on the correct device
         self.register_buffer('R', train_data.log_tensor.clone())
-        self.register_buffer('R_valid', valid_data.log_tensor.clone())
         self.device = self.R.device
 
         # ------ Declare learnable parameters
@@ -324,7 +322,7 @@ class IMPACTModel_low_mem(nn.Module):
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
         R_t = self.R.clone()
-        R_t[R_t == 0] = self.R_valid[R_t == 0]
+        R_t[R_t == 0] = valid_data.log_tensor[R_t == 0]
         R_t = R_t.T - 1
         self.register_buffer('nb_modalities',
                              torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
@@ -359,7 +357,6 @@ class IMPACTModel_low_mem(nn.Module):
             1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1)
 
         self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities))
-        self.register_buffer('ir_idx_valid', resp_to_mod(self.R_valid, self.nb_modalities))
 
     def get_embeddings(self, user_ids, item_ids, concept_ids):
         # User embeddings
@@ -425,37 +422,6 @@ class IMPACT(AbstractModel):
     def _loss_function(self, pred, real):
         return torch.tensor([4])
 
-    def evaluation_param(func):
-        """
-        Temporary change precomputed self.model.R and self.model.ir_idx params
-        """
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            # Extract 'self' from the first positional argument
-            self = args[0] if args else None
-            if self is None:
-                raise ValueError("Decorator 'evaluation_param' requires to be used on instance methods.")
-
-            # Store the previous state
-            prev_state = (self.model.R, self.model.ir_idx)
-
-            try:
-                # Set the state to 'eval' before method execution
-                self.model.R = self.model.R_valid
-                self.model.ir_idx = self.model.ir_idx_valid
-                # Call the actual method
-                result = func(*args, **kwargs)
-            finally:
-                # Restore the previous state after method execution
-                self.model.R = prev_state[0]
-                self.model.ir_idx = prev_state[1]
-
-            return result
-
-        return wrapper
-
-    @evaluation_param
     @AbstractModel.evaluation_state
     def evaluate_valid(self, valid_dataloader: data.DataLoader, valid_tensor):
 
