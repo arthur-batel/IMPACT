@@ -178,7 +178,7 @@ class IMPACTModel(nn.Module):
 
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
-        R_t = self.R
+        R_t = self.R.clone()
         R_t[R_t == 0] = self.R_valid[R_t == 0]
         R_t = R_t.T - 1
         self.register_buffer('nb_modalities',
