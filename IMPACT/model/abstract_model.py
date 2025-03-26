@@ -38,12 +38,12 @@ class AbstractModel(ABC):
         self._trained = False
         self.fold = 0
 
-        # Save/Load model params setup
-        if self.config['save_params']:
-            self._setup_params_paths()
-
-        if self.config['load_params']:
-            self._ask_loading_pref()
+        # # Save/Load model params setup
+        # if self.config['save_params']:
+        #     self._setup_params_paths()
+        #
+        # if self.config['load_params']:
+        #     self._ask_loading_pref()
 
         # Tensorboard configuration
         # self._ts = lambda train_loss, valid_loss, valid_rmse,valid_mae, ep: None
@@ -591,6 +591,7 @@ class AbstractModel(ABC):
         self.writer.flush()
 
     def init_model(self, train_data: Dataset, valid_data: Dataset):
+
         if self.config['load_params']:
             self._load_model_params(temporary=False)
         self.state = "model_initialized"

@@ -1,4 +1,5 @@
 import functools
+import os
 from collections import defaultdict
 
 from torch.masked import MaskedTensor
@@ -118,7 +119,7 @@ class IMPACTModel(nn.Module):
     '''
 
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, train_data: Dataset,
-                 valid_data: Dataset, nb_mod_max: int = 12):
+                 valid_data: Dataset, nb_mod_max: int = 12, load_params: bool = False):
         super(IMPACTModel, self).__init__()
         self.user_n: int = user_n
         self.item_n: int = item_n
@@ -178,42 +179,52 @@ class IMPACTModel(nn.Module):
 
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
-        R_t = self.R.clone()
-        R_t[R_t == 0] = valid_data.log_tensor[R_t == 0]
-        R_t = R_t.T - 1
+
+
+
         self.register_buffer('nb_modalities',
                              torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
         self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent) * float('inf'))
         self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1))
         self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2))
 
-        for item_i, logs in enumerate(R_t):
-            unique_logs = torch.unique(logs)
-            delta_min = torch.min(
-                torch.abs(unique_logs.unsqueeze(0) - unique_logs.unsqueeze(1)) + torch.eye(unique_logs.shape[0],
-                                                                                           device=self.device))
+        if not load_params:
 
-            if delta_min < 1 / (self.nb_mod_max - 1):
-                self.nb_modalities[item_i] = self.nb_mod_max
-            else:
-                self.nb_modalities[item_i] = (torch.round(1 / delta_min) + 1).long()
+            R_t = self.R.clone()
+            R_t[R_t == 0] = valid_data.log_tensor[R_t == 0]
+            R_t = R_t.T - 1
 
-            self.mask[item_i, torch.arange(1, self.nb_modalities[item_i] + 1)] = 0
-            self.diff_mask[item_i, torch.arange(self.nb_modalities[item_i] + 1)] = 1
-            self.diff_mask2[item_i, torch.arange(self.nb_modalities[item_i])] = 1
+            for item_i, logs in enumerate(R_t):
+                unique_logs = torch.unique(logs)
+                delta_min = torch.min(
+                    torch.abs(unique_logs.unsqueeze(0) - unique_logs.unsqueeze(1)) + torch.eye(unique_logs.shape[0],
+                                                                                               device=self.device))
+
+                if delta_min < 1 / (self.nb_mod_max - 1):
+                    self.nb_modalities[item_i] = self.nb_mod_max
+                else:
+                    self.nb_modalities[item_i] = (torch.round(1 / delta_min) + 1).long()
+
+                self.mask[item_i, torch.arange(1, self.nb_modalities[item_i] + 1)] = 0
+                self.diff_mask[item_i, torch.arange(self.nb_modalities[item_i] + 1)] = 1
+                self.diff_mask2[item_i, torch.arange(self.nb_modalities[item_i])] = 1
+
+            self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
+                1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1, persistent=False)
+            self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities), persistent=False)
+        else :
+            self.register_buffer('in_idx', None, persistent=False)
+            self.register_buffer('ir_idx', None, persistent=False)
 
         # Indexes precomputing
         self.register_buffer('im_idx',
                              torch.arange(self.item_n, device=self.device).unsqueeze(
                                  1) * self.nb_mod_max_plus_sent + torch.arange(
                                  self.nb_mod_max_plus_sent, device=self.device).expand(self.item_n,
-                                                                                         self.nb_mod_max_plus_sent))
+                                                                                         self.nb_mod_max_plus_sent), persistent=False)
         self.register_buffer('i0_idx',
-                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent)
-        self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
-            1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1)
+                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent, persistent=False)
 
-        self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities))
 
     def get_embeddings(self, user_ids, item_ids, concept_ids):
         # User embeddings
@@ -257,7 +268,7 @@ class IMPACTModel_low_mem(nn.Module):
 
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, train_data: Dataset,
                  valid_data: Dataset,
-                 d_in: int = 3, nb_mod_max: int = 12):
+                 d_in: int = 3, nb_mod_max: int = 12, load_params: bool = False):
         super(IMPACTModel_low_mem, self).__init__()
         self.user_n: int = user_n
         self.item_n: int = item_n
@@ -350,13 +361,13 @@ class IMPACTModel_low_mem(nn.Module):
                              torch.arange(self.item_n, device=self.device).unsqueeze(
                                  1) * self.nb_mod_max_plus_sent + torch.arange(
                                  self.nb_mod_max_plus_sent, device=self.device).expand(self.item_n,
-                                                                                         self.nb_mod_max_plus_sent))
+                                                                                         self.nb_mod_max_plus_sent), persistent=False)
         self.register_buffer('i0_idx',
-                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent)
+                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent, persistent=False)
         self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
-            1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1)
+            1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1, persistent=False)
 
-        self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities))
+        self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities), persistent=False)
 
     def get_embeddings(self, user_ids, item_ids, concept_ids):
         # User embeddings
@@ -410,14 +421,46 @@ class IMPACT(AbstractModel):
 
         if self.config['low_mem'] == True:
             self.model = IMPACTModel_low_mem(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
-                                 train_data, valid_data, self.config['d_in'], self.config['num_responses'])
+                                 train_data, valid_data, self.config['d_in'], self.config['num_responses'], load_params=self.config['load_params'])
             self.loss = custom_loss_low_mem
         else:
             self.model = IMPACTModel(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
-                                 train_data, valid_data, self.config['num_responses'])
+                                 train_data, valid_data, self.config['num_responses'], load_params=self.config['load_params'])
             self.loss = custom_loss
 
         super().init_model(train_data, valid_data)
+
+    def _get_params_path(self):
+        path_prefix = self.config['params_path']+"_"
+        path_suffix = '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
+            self.config['seed']) + '.pt'
+        return path_prefix, path_suffix
+
+    def _load_model_params(self, temporary=True) -> None:
+        super()._load_model_params(temporary)
+        path_prefix, path_suffix = self._get_params_path()
+
+        # self.model.nb_modalities = torch.load(path_prefix+"nb_modalities"+path_suffix, map_location=torch.device(self.config['device']))
+        # self.model.mask = torch.load(path_prefix + "mask" + path_suffix,
+        #                                       map_location=torch.device(self.config['device']))
+        # self.model.diff_mask = torch.load(path_prefix + "diff_mask" + path_suffix,
+        #                                       map_location=torch.device(self.config['device']))
+        # self.model.diff_mask2 = torch.load(path_prefix + "diff_mask2" + path_suffix,
+        #                                       map_location=torch.device(self.config['device']))
+
+        self.model.in_idx = torch.arange(self.model.item_n, device=self.model.device).unsqueeze(
+            1) * self.model.nb_mod_max_plus_sent + self.model.nb_modalities.unsqueeze(1) + 1
+        self.model.ir_idx = resp_to_mod(self.model.R, self.model.nb_modalities)
+
+    def _save_model_params(self, temporary=True) -> None:
+        super()._save_model_params(temporary)
+        path_prefix, path_suffix = self._get_params_path()
+
+        # torch.save(self.model.nb_modalities, path_prefix+"nb_modalities"+path_suffix)
+        # torch.save(self.model.mask, path_prefix + "mask" + path_suffix)
+        # torch.save(self.model.diff_mask, path_prefix + "diff_mask" + path_suffix)
+        # torch.save(self.model.diff_mask2, path_prefix + "diff_mask2" + path_suffix)
+
 
     def _loss_function(self, pred, real):
         return torch.tensor([4])
