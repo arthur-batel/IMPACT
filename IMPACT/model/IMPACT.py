@@ -268,8 +268,8 @@ class IMPACTModel_low_mem(nn.Module):
         self.concept_map: dict = concept_map
 
         # Register R as a buffer to ensure it's on the correct device
-        self.register_buffer('R', train_data.log_tensor)
-        self.register_buffer('R_valid', valid_data.log_tensor)
+        self.register_buffer('R', train_data.log_tensor.clone())
+        self.register_buffer('R_valid', valid_data.log_tensor.clone())
         self.device = self.R.device
 
         # ------ Declare learnable parameters
@@ -401,9 +401,6 @@ class IMPACTModel_low_mem(nn.Module):
         p_uim = torch.sum(diff ** 2, dim=2)
 
         return mod_to_resp(torch.argmin(p_uim + self.mask[item_ids, :], dim=1), self.nb_modalities[item_ids])
-
-
-
 
 class IMPACT(AbstractModel):
 
