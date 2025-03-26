@@ -130,6 +130,7 @@ class IMPACTModel(nn.Module):
         # Register R as a buffer to ensure it's on the correct device
         self.register_buffer('R', train_data.log_tensor)
         self.register_buffer('R_valid', valid_data.log_tensor)
+        self.device = self.R.device
 
         # ------ Declare learnable parameters
         ## User embeddings
@@ -140,8 +141,8 @@ class IMPACTModel(nn.Module):
         # ------ Initialize Parameters
 
         ## Initialize users and item-response embeddings
-        self.users_emb.weight.data = self.users_emb.weight.data.zero_().to(self.R.device)
-        self.item_response_embeddings.weight.data = self.item_response_embeddings.weight.data.zero_().to(self.R.device)
+        self.users_emb.weight.data = self.users_emb.weight.data.zero_().to(self.device)
+        self.item_response_embeddings.weight.data = self.item_response_embeddings.weight.data.zero_().to(self.device)
 
         k2q = defaultdict(set)
         for item, concept_list in concept_map.items():
@@ -149,20 +150,20 @@ class IMPACTModel(nn.Module):
                 k2q[concept].add(item)
         items_by_concepts = list(map(set, k2q.values()))
         for i, c in enumerate(items_by_concepts):
-            c_list = torch.tensor(list(c), dtype=torch.long, device=self.R.device)
+            c_list = torch.tensor(list(c), dtype=torch.long, device=self.device)
             self.users_emb.weight.data[:, i].add_(
                 (self.R[:, c_list].sqrt().sum(dim=1) / (torch.sum(self.R[:, c_list] != 0, dim=1) + 1e-12))
             )
 
-        response_values = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.R.device)
+        response_values = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.device)
         for concept_index, items in enumerate(k2q.values()):
             # Convert items to a tensor
-            items = torch.tensor(list(items), dtype=torch.long, device=self.R.device)
+            items = torch.tensor(list(items), dtype=torch.long, device=self.device)
 
             # Compute item-response indices for all responses
             # item_indices shape: [nb_items_in_concept, nb_responses]
             item_indices = items.unsqueeze(1) * self.nb_mod_max_plus_sent + torch.arange(self.nb_mod_max_plus_sent,
-                                                                                         device=self.R.device).unsqueeze(
+                                                                                         device=self.device).unsqueeze(
                 0)
 
             # Flatten to a 1D tensor
@@ -181,7 +182,7 @@ class IMPACTModel(nn.Module):
         R_t[R_t == 0] = self.R_valid[R_t == 0]
         R_t = R_t.T - 1
         self.register_buffer('nb_modalities',
-                             torch.zeros(self.item_n, dtype=torch.long, device=self.R.device))  # without sentinels
+                             torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
         self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent) * float('inf'))
         self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1))
         self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2))
@@ -190,7 +191,7 @@ class IMPACTModel(nn.Module):
             unique_logs = torch.unique(logs)
             delta_min = torch.min(
                 torch.abs(unique_logs.unsqueeze(0) - unique_logs.unsqueeze(1)) + torch.eye(unique_logs.shape[0],
-                                                                                           device=self.R.device))
+                                                                                           device=self.device))
 
             if delta_min < 1 / (self.nb_mod_max - 1):
                 self.nb_modalities[item_i] = self.nb_mod_max
@@ -203,13 +204,13 @@ class IMPACTModel(nn.Module):
 
         # Indexes precomputing
         self.register_buffer('im_idx',
-                             torch.arange(self.item_n, device=self.R.device).unsqueeze(
+                             torch.arange(self.item_n, device=self.device).unsqueeze(
                                  1) * self.nb_mod_max_plus_sent + torch.arange(
-                                 self.nb_mod_max_plus_sent, device=self.R.device).expand(self.item_n,
+                                 self.nb_mod_max_plus_sent, device=self.device).expand(self.item_n,
                                                                                          self.nb_mod_max_plus_sent))
         self.register_buffer('i0_idx',
-                             torch.arange(self.item_n, device=self.R.device).unsqueeze(1) * self.nb_mod_max_plus_sent)
-        self.register_buffer('in_idx', torch.arange(self.item_n, device=self.R.device).unsqueeze(
+                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent)
+        self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
             1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1)
 
         self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities))
@@ -269,6 +270,7 @@ class IMPACTModel_low_mem(nn.Module):
         # Register R as a buffer to ensure it's on the correct device
         self.register_buffer('R', train_data.log_tensor)
         self.register_buffer('R_valid', valid_data.log_tensor)
+        self.device = self.R.device
 
         # ------ Declare learnable parameters
         ## User embeddings
@@ -284,8 +286,8 @@ class IMPACTModel_low_mem(nn.Module):
         F.normalize(self.W.data, p=2, dim=[1, 2], out=self.W.data)
 
         ## Initialize users and item-response embeddings
-        self.users_emb.weight.data = self.users_emb.weight.data.zero_().to(self.R.device)
-        self.item_response_embeddings.weight.data = self.item_response_embeddings.weight.data.zero_().to(self.R.device)
+        self.users_emb.weight.data = self.users_emb.weight.data.zero_().to(self.device)
+        self.item_response_embeddings.weight.data = self.item_response_embeddings.weight.data.zero_().to(self.device)
 
         k2q = defaultdict(set)
         for item, concept_list in concept_map.items():
@@ -293,20 +295,20 @@ class IMPACTModel_low_mem(nn.Module):
                 k2q[concept].add(item)
         items_by_concepts = list(map(set, k2q.values()))
         for i, c in enumerate(items_by_concepts):
-            c_list = torch.tensor(list(c), dtype=torch.long, device=self.R.device)
+            c_list = torch.tensor(list(c), dtype=torch.long, device=self.device)
             self.users_emb.weight.data[:, i].add_(
                 (self.R[:, c_list].sqrt().sum(dim=1) / (torch.sum(self.R[:, c_list] != 0, dim=1) + 1e-12))
             )
 
-        response_values = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.R.device)
+        response_values = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.device)
         for concept_index, items in enumerate(k2q.values()):
             # Convert items to a tensor
-            items = torch.tensor(list(items), dtype=torch.long, device=self.R.device)
+            items = torch.tensor(list(items), dtype=torch.long, device=self.device)
 
             # Compute item-response indices for all responses
             # item_indices shape: [nb_items_in_concept, nb_responses]
             item_indices = items.unsqueeze(1) * self.nb_mod_max_plus_sent + torch.arange(self.nb_mod_max_plus_sent,
-                                                                                         device=self.R.device).unsqueeze(
+                                                                                         device=self.device).unsqueeze(
                 0)
 
             # Flatten to a 1D tensor
@@ -325,7 +327,7 @@ class IMPACTModel_low_mem(nn.Module):
         R_t[R_t == 0] = self.R_valid[R_t == 0]
         R_t = R_t.T - 1
         self.register_buffer('nb_modalities',
-                             torch.zeros(self.item_n, dtype=torch.long, device=self.R.device))  # without sentinels
+                             torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
         self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent) * float('inf'))
         self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1))
         self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2))
@@ -334,7 +336,7 @@ class IMPACTModel_low_mem(nn.Module):
             unique_logs = torch.unique(logs)
             delta_min = torch.min(
                 torch.abs(unique_logs.unsqueeze(0) - unique_logs.unsqueeze(1)) + torch.eye(unique_logs.shape[0],
-                                                                                           device=self.R.device))
+                                                                                           device=self.device))
 
             if delta_min < 1 / (self.nb_mod_max - 1):
                 self.nb_modalities[item_i] = self.nb_mod_max
@@ -347,13 +349,13 @@ class IMPACTModel_low_mem(nn.Module):
 
         # Indexes precomputing
         self.register_buffer('im_idx',
-                             torch.arange(self.item_n, device=self.R.device).unsqueeze(
+                             torch.arange(self.item_n, device=self.device).unsqueeze(
                                  1) * self.nb_mod_max_plus_sent + torch.arange(
-                                 self.nb_mod_max_plus_sent, device=self.R.device).expand(self.item_n,
+                                 self.nb_mod_max_plus_sent, device=self.device).expand(self.item_n,
                                                                                          self.nb_mod_max_plus_sent))
         self.register_buffer('i0_idx',
-                             torch.arange(self.item_n, device=self.R.device).unsqueeze(1) * self.nb_mod_max_plus_sent)
-        self.register_buffer('in_idx', torch.arange(self.item_n, device=self.R.device).unsqueeze(
+                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent)
+        self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
             1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1)
 
         self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities))
