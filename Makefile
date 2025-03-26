@@ -1,4 +1,4 @@
-.PHONY: install, clean, check_conda
+.PHONY: install, clean, check_conda, upload_pypi
 
 install: check_conda
 	wget -nc --content-disposition "https://zenodo.org/record/14756042/files/data_archive.zip?download=1" -P ./experiments/datasets
@@ -20,3 +20,8 @@ check_conda:
 		echo "conda needs to be installed\nrun the makefile again after the installation"; \
 		exit 1; \
 	fi
+
+upload_pypi:
+	rm -rf build/ dist/
+	python setup.py sdist bdist_wheel
+	twine upload dist/* -u __token__ -p $(PYPI_API_TOKEN)
