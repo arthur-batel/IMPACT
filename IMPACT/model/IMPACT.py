@@ -184,9 +184,9 @@ class IMPACTModel(nn.Module):
 
         self.register_buffer('nb_modalities',
                              torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
-        self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent) * float('inf'))
-        self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1))
-        self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2))
+        self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent, device=self.device) * float('inf'))
+        self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1, device=self.device))
+        self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2, device=self.device))
 
         if not load_params:
 
