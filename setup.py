@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lirisimpact',
-    version='2.0.13',
+    version='2.0.14',
     author='Arthur BATEL',
     author_email='arthur.batel@insa-lyon.fr',
     packages=find_packages(),

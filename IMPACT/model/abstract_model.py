@@ -36,7 +36,7 @@ class AbstractModel(ABC):
         self.model = None
         self.state = None
         self._trained = False
-        self.fold = 0
+        self.fold = config['i_fold']
 
         # # Save/Load model params setup
         # if self.config['save_params']:
