@@ -436,6 +436,7 @@ class IMPACT(AbstractModel):
         self.model.in_idx = torch.arange(self.model.item_n, device=self.model.device).unsqueeze(
             1) * self.model.nb_mod_max_plus_sent + self.model.nb_modalities.unsqueeze(1) + 1
         self.model.ir_idx = resp_to_mod(self.model.R, self.model.nb_modalities)
+        self.model.to(self.config['device'])
 
     def _save_model_params(self, temporary=True) -> None:
         super()._save_model_params(temporary)
