@@ -430,23 +430,8 @@ class IMPACT(AbstractModel):
 
         super().init_model(train_data, valid_data)
 
-    def _get_params_path(self):
-        path_prefix = self.config['params_path']+"_"
-        path_suffix = '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
-            self.config['seed']) + '.pt'
-        return path_prefix, path_suffix
-
     def _load_model_params(self, temporary=True) -> None:
         super()._load_model_params(temporary)
-        path_prefix, path_suffix = self._get_params_path()
-
-        # self.model.nb_modalities = torch.load(path_prefix+"nb_modalities"+path_suffix, map_location=torch.device(self.config['device']))
-        # self.model.mask = torch.load(path_prefix + "mask" + path_suffix,
-        #                                       map_location=torch.device(self.config['device']))
-        # self.model.diff_mask = torch.load(path_prefix + "diff_mask" + path_suffix,
-        #                                       map_location=torch.device(self.config['device']))
-        # self.model.diff_mask2 = torch.load(path_prefix + "diff_mask2" + path_suffix,
-        #                                       map_location=torch.device(self.config['device']))
 
         self.model.in_idx = torch.arange(self.model.item_n, device=self.model.device).unsqueeze(
             1) * self.model.nb_mod_max_plus_sent + self.model.nb_modalities.unsqueeze(1) + 1
@@ -454,12 +439,6 @@ class IMPACT(AbstractModel):
 
     def _save_model_params(self, temporary=True) -> None:
         super()._save_model_params(temporary)
-        path_prefix, path_suffix = self._get_params_path()
-
-        # torch.save(self.model.nb_modalities, path_prefix+"nb_modalities"+path_suffix)
-        # torch.save(self.model.mask, path_prefix + "mask" + path_suffix)
-        # torch.save(self.model.diff_mask, path_prefix + "diff_mask" + path_suffix)
-        # torch.save(self.model.diff_mask2, path_prefix + "diff_mask2" + path_suffix)
 
 
     def _loss_function(self, pred, real):
