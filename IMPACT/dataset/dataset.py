@@ -16,7 +16,7 @@ class Dataset(object):
             concept_map: dict, concept map {qid: cid}
             metadata : dict of keys {"num_user_id", "num_item_id", "num_dimension_id"}, containing the total number of users, items and concepts
         """
-        self.metadata = metadata
+        self._metadata = metadata
 
         self._raw_data = data
         self._concept_map = concept_map
@@ -40,6 +40,13 @@ class Dataset(object):
             f'Require item ids renumbered : max item id = {max(self._items_id)}; nb items = {self.n_items}'
         assert max(self._concepts_id) < self.n_categories, \
             f'Require concept ids renumbered : max concept id = {max(concepts_id)}; nb concepts = {self.n_categories}'
+
+    @property
+    def metadata(self):
+        """
+        @return: Metadata of the dataset
+        """
+        return self._metadata
 
     @property
     def n_users(self):
