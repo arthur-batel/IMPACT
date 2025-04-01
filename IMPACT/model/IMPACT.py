@@ -130,6 +130,7 @@ class IMPACTModel(nn.Module):
 
         # Register R as a buffer to ensure it's on the correct device
         self.register_buffer('R', train_data.log_tensor.clone())
+        print(self.R[5])
 
         self.device = self.R.device
 
@@ -180,7 +181,7 @@ class IMPACTModel(nn.Module):
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
 
-
+        print(self.R[5])
 
         self.register_buffer('nb_modalities',
                              torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
@@ -215,7 +216,7 @@ class IMPACTModel(nn.Module):
         else :
             self.register_buffer('in_idx', None, persistent=False)
             self.register_buffer('ir_idx', None, persistent=False)
-
+        print(self.R[5])
         # Indexes precomputing
         self.register_buffer('im_idx',
                              torch.arange(self.item_n, device=self.device).unsqueeze(
@@ -224,7 +225,7 @@ class IMPACTModel(nn.Module):
                                                                                          self.nb_mod_max_plus_sent), persistent=False)
         self.register_buffer('i0_idx',
                              torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent, persistent=False)
-
+        print(self.R[5])
 
     def get_embeddings(self, user_ids, item_ids, concept_ids):
         # User embeddings
