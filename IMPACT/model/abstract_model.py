@@ -698,7 +698,7 @@ class AbstractModel(ABC):
             self.config['seed'])
         if temporary:
             path += '_temp'
-        self.model.load_state_dict(torch.load(path + '.pth', map_location=torch.device(self.config['device'])))
+        self.model.load_state_dict(torch.load(path + '.pth', map_location=torch.device(self.config['device']),weights_only=True))
         self.model.to(self.config['device'])
 
     def _ask_saving_pref(self):

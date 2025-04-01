@@ -1,3 +1,3 @@
-import IMPACT.dataset
-import IMPACT.utils
-import IMPACT.model
+import IMPACT.dataset as dataset
+import IMPACT.utils as utils
+import IMPACT.model as model
