@@ -129,7 +129,7 @@ class IMPACTModel(nn.Module):
         self.concept_map: dict = concept_map
 
         # Register R as a buffer to ensure it's on the correct device
-        self.register_buffer('R', train_data.log_tensor)
+        self.register_buffer('R', train_data.log_tensor.clone())
 
         self.device = self.R.device
 
