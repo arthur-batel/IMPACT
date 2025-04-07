@@ -7,9 +7,15 @@
 Welcome to the official repository for IMPACT – a novel, interpretable model designed for Multi-Target Predictions (MTP) with multi-class outputs. IMPACT extends the Cognitive Diagnosis Bayesian Personalized Ranking framework to effectively handle multi-class prediction tasks. Built primarily in Python using PyTorch, this repository includes the four datasets featured in our publication, along with Jupyter notebooks that allow you to reproduce our experiments and conduct your own analyses.
 
 ## Installing IMPACT
-Directly from pip
+Directly from pip 
+- with dependencies :
 ```bash
 pip install lirisimpact
+import IMPACT
+```
+- without dependencies :
+```bash
+SKIP_INSTALL_REQUIRES=1 pip install lirisimpact
 import IMPACT
 ```
 Or from source for developers
