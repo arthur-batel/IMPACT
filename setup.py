@@ -17,7 +17,7 @@ install_requires = [] if SKIP_DEPENDENCIES else [
 
 setup(
     name='lirisimpact',
-    version='2.0.24',
+    version='2.0.25',
     author='Arthur BATEL',
     author_email='arthur.batel@insa-lyon.fr',
     packages=find_packages(),
