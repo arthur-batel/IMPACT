@@ -32,7 +32,7 @@ class Dataset(object):
         concepts_id = set(sum(concept_map.values(), []))
         self._concepts_id = {int(x) for x in concepts_id}
 
-        self._nb_modalities = nb_modalities
+        self._nb_modalities = nb_modalities.to(self._raw_data_array.device)
 
 
 
@@ -50,7 +50,7 @@ class Dataset(object):
         """
         return self._metadata
 
-    @prooperty
+    @property
     def nb_modalities(self):
         """
         @return: Nb of modalities of the questions

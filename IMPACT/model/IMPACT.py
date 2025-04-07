@@ -181,7 +181,7 @@ class IMPACTModel(nn.Module):
         # Modality mask creation + mod_per_item
 
         self.register_buffer('nb_modalities',
-                             torch.zeros(self.item_n, dtype=torch.long, device=self.device)  # without sentinels
+                             torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
         self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent, device=self.device) * float('inf'))
         self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1, device=self.device))
         self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2, device=self.device))
@@ -200,7 +200,7 @@ class IMPACTModel(nn.Module):
 
                 if self.nb_modalities[item_i] > self.nb_mod_max :
                     self.nb_modalities[item_i] = self.nb_mod_max  
-                    
+
                 self.mask[item_i, torch.arange(1, self.nb_modalities[item_i] + 1)] = 0
                 self.diff_mask[item_i, torch.arange(self.nb_modalities[item_i] + 1)] = 1
                 self.diff_mask2[item_i, torch.arange(self.nb_modalities[item_i])] = 1

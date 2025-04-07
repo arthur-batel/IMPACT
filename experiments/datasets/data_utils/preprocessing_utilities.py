@@ -4,6 +4,7 @@ from typing import List
 import pandas as pd
 import random
 import numpy as np
+import torch
 
 from sklearn.model_selection import KFold, train_test_split
 from tqdm import tqdm
@@ -389,6 +390,27 @@ def save_to_csv(data, path):
     :type path: str
     """
     pd.DataFrame.from_records(sorted(data), columns=['student_id', 'item_id', 'correct', 'dimension_id']).to_csv(path, index=False)
+
+def get_modalities_nb(data, metadata) :
+
+    tensor_data = torch.zeros((metadata['num_user_id'], metadata['num_item_id']), dtype=torch.double)
+    sid = torch.from_numpy(data['user_id'].to_numpy()).long()
+    qid = torch.from_numpy(data['item_id'].to_numpy()).long()
+    val = torch.from_numpy(data['correct'].to_numpy())
+    
+    tensor_data.index_put_((sid, qid), val)
+
+    R_t = tensor_data
+    R_t = R_t.T - 1
+    
+    nb_modalities = torch.zeros(metadata['num_item_id'], dtype=torch.long)
+    
+    for item_i, logs in enumerate(R_t):
+        unique_logs = torch.unique(logs)
+        delta_min = torch.min(
+            torch.abs(unique_logs.unsqueeze(0) - unique_logs.unsqueeze(1)) + torch.eye(unique_logs.shape[0]))
+        nb_modalities[item_i] = (torch.round(1 / delta_min) + 1).long()
+    return nb_modalities
 
 def get_metadata(data: pd.DataFrame, keys: List[str]) -> dict:
     m = {}
