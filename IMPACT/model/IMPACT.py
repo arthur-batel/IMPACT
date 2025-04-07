@@ -205,20 +205,21 @@ class IMPACTModel(nn.Module):
                 self.diff_mask[item_i, torch.arange(self.nb_modalities[item_i] + 1)] = 1
                 self.diff_mask2[item_i, torch.arange(self.nb_modalities[item_i])] = 1
 
-            self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
-                1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1, persistent=False)
-            self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities), persistent=False)
+
+            self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities), persistent=False) # Log tensor with modalities replacing logs (including sentinels)
         else :
-            self.register_buffer('in_idx', None, persistent=False)
-            self.register_buffer('ir_idx', None, persistent=False)
+
+            self.register_buffer('ir_idx', None, persistent=False) # Log tensor with modalities replacing logs (including sentinels)
         # Indexes precomputing
         self.register_buffer('im_idx',
                              torch.arange(self.item_n, device=self.device).unsqueeze(
                                  1) * self.nb_mod_max_plus_sent + torch.arange(
                                  self.nb_mod_max_plus_sent, device=self.device).expand(self.item_n,
-                                                                                         self.nb_mod_max_plus_sent), persistent=False)
+                                                                                         self.nb_mod_max_plus_sent), persistent=False) # All item-response indices (for comparison)
+        self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
+            1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1, persistent=False) # Right sentinels indices
         self.register_buffer('i0_idx',
-                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent, persistent=False)
+                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent, persistent=False) # Left sentinels indices
 
     def get_embeddings(self, user_ids, item_ids, concept_ids):
         # User embeddings
@@ -426,8 +427,6 @@ class IMPACT(AbstractModel):
     def _load_model_params(self, temporary=True) -> None:
         super()._load_model_params(temporary)
 
-        self.model.in_idx = torch.arange(self.model.item_n, device=self.model.device).unsqueeze(
-            1) * self.model.nb_mod_max_plus_sent + self.model.nb_modalities.unsqueeze(1) + 1
         self.model.ir_idx = resp_to_mod(self.model.R, self.model.nb_modalities)
         self.model.to(self.config['device'])
 
