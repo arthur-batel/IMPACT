@@ -42,7 +42,7 @@ config = utils.generate_eval_config(dataset_name="postcovid", learning_rate=0.02
                                     valid_metric='rmse', pred_metrics=['rmse', 'mae'], profile_metrics=['doa', 'pc-er'])
 
 # Read the dataset and the metadata -------------
-concept_map, train_data, valid_data, test_data = utils.prepare_dataset(config, i_fold=0)
+train_data, valid_data, test_data = utils.prepare_dataset(config, i_fold=0)
 
 # Train the model --------------------------------
 algo = model.IMPACT(**config)
