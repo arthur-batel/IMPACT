@@ -118,7 +118,7 @@ class IMPACTModel(nn.Module):
     Graph Convolutional Cognitive Diagnostic
     '''
 
-    def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, train_data: Dataset,
+    def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
                  valid_data: Dataset, nb_mod_max: int = 12, load_params: bool = False):
         super(IMPACTModel, self).__init__()
         self.user_n: int = user_n
@@ -181,28 +181,26 @@ class IMPACTModel(nn.Module):
         # Modality mask creation + mod_per_item
 
         self.register_buffer('nb_modalities',
-                             torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
+                             torch.zeros(self.item_n, dtype=torch.long, device=self.device)  # without sentinels
         self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent, device=self.device) * float('inf'))
         self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1, device=self.device))
         self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2, device=self.device))
 
+
+        
         if not load_params:
+
+            self.nb_modalities = nb_modalities
 
             R_t = self.R.clone()
             R_t[R_t == 0] = valid_data.log_tensor[R_t == 0]
             R_t = R_t.T - 1
 
             for item_i, logs in enumerate(R_t):
-                unique_logs = torch.unique(logs)
-                delta_min = torch.min(
-                    torch.abs(unique_logs.unsqueeze(0) - unique_logs.unsqueeze(1)) + torch.eye(unique_logs.shape[0],
-                                                                                               device=self.device))
 
-                if delta_min < 1 / (self.nb_mod_max - 1):
-                    self.nb_modalities[item_i] = self.nb_mod_max
-                else:
-                    self.nb_modalities[item_i] = (torch.round(1 / delta_min) + 1).long()
-
+                if self.nb_modalities[item_i] > self.nb_mod_max :
+                    self.nb_modalities[item_i] = self.nb_mod_max  
+                    
                 self.mask[item_i, torch.arange(1, self.nb_modalities[item_i] + 1)] = 0
                 self.diff_mask[item_i, torch.arange(self.nb_modalities[item_i] + 1)] = 1
                 self.diff_mask2[item_i, torch.arange(self.nb_modalities[item_i])] = 1
@@ -262,7 +260,7 @@ class IMPACTModel_low_mem(nn.Module):
     Graph Convolutional Cognitive Diagnostic
     '''
 
-    def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, train_data: Dataset,
+    def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
                  valid_data: Dataset,
                  d_in: int = 3, nb_mod_max: int = 12, load_params: bool = False):
         super(IMPACTModel_low_mem, self).__init__()
@@ -414,13 +412,12 @@ class IMPACT(AbstractModel):
 
     def init_model(self, train_data: Dataset, valid_data: Dataset):
         self.concept_map = train_data.concept_map
-
         if self.config['low_mem'] == True:
-            self.model = IMPACTModel_low_mem(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
+            self.model = IMPACTModel_low_mem(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map, train_data.nb_modalities,
                                  train_data, valid_data, self.config['d_in'], self.config['num_responses'], load_params=self.config['load_params'])
             self.loss = custom_loss_low_mem
         else:
-            self.model = IMPACTModel(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
+            self.model = IMPACTModel(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map, train_data.nb_modalities,
                                  train_data, valid_data, self.config['num_responses'], load_params=self.config['load_params'])
             self.loss = custom_loss
 
