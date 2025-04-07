@@ -270,18 +270,19 @@ def test(dataset_name: str, config: dict, generate_algo, find_emb):
 
         concept_map = json.load(open(f'../datasets/{dataset_name}/concept_map.json', 'r'))
         concept_map = {int(k): [int(x) for x in v] for k, v in concept_map.items()}
+        nb_modalities = torch.load(f'../datasets/{dataset_name}/nb_modalities.pkl', weights_only=True)
         metadata = json.load(open(f'../datasets/{dataset_name}/metadata.json', 'r'))
         concept_array, concept_lens = utils.preprocess_concept_map(concept_map)
         d = pd.read_csv(f'../datasets/2-preprocessed_data/{dataset_name}_test_quadruples_vert_{i_fold}.csv',
                         encoding='utf-8').to_records(index=False, column_dtypes={'student_id': int, 'item_id': int,
                                                                                  "correct": float, "concept_id": int})
-        train_dataloader = dataset.LoaderDataset(d, concept_map, metadata)
+        train_dataloader = dataset.LoaderDataset(d, concept_map, metadata, nb_modalities)
         train_quadruplets = pd.read_csv(
             f'../datasets/2-preprocessed_data/{dataset_name}_train_quadruples_vert_{i_fold}.csv',
             encoding='utf-8').to_records(index=False,
                                          column_dtypes={'student_id': int, 'item_id': int,
                                                         "correct": float, "dimension_id": int})
-        train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata)
+        train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata, nb_modalities)
         nb_mod_max = 20
         R_t = train_data.log_tensor.T.to(device='cpu')
         nb_modalities = torch.zeros(R_t.shape[0], dtype=torch.long)

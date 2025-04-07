@@ -525,6 +525,7 @@ def _preprocess_list_q(list_q, max_len):
 def compute_doa(embs: list, dataset_name: str, algo_name: str):
     concept_map = json.load(open(f'../datasets/{dataset_name}/concept_map.json', 'r'))
     concept_map = {int(k): [int(x) for x in v] for k, v in concept_map.items()}
+    nb_modalities = torch.load(f'../datasets/{dataset_name}/nb_modalities.pkl', weights_only=True)
     metadata = json.load(open(f'../datasets/{dataset_name}/metadata.json', 'r'))
 
     doas = []
@@ -534,7 +535,7 @@ def compute_doa(embs: list, dataset_name: str, algo_name: str):
             encoding='utf-8').to_records(index=False,
                                          column_dtypes={'student_id': int, 'item_id': int, "dimension_id": int,
                                                         "correct": float, "concept_id": int})
-        train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata)
+        train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata, nb_modalities)
 
         R = train_data.log_tensor.numpy()
         E = embs[i_fold]
@@ -756,6 +757,8 @@ def prepare_dataset(config: dict, i_fold:int=0) :
     ## Concept map format : {question_id : [category_id1, category_id2, ...]}
     concept_map = json.load(open(f'../datasets/{config["dataset_name"]}/concept_map.json', 'r'))
     concept_map = {int(k): [int(x) for x in v] for k, v in concept_map.items()}
+    nb_modalities = torch.load(f'../datasets/{config["dataset_name"]}/nb_modalities.pkl', weights_only=True)
+
 
     ## Metadata map format : {"num_user_id": ..., "num_item_id": ..., "num_dimension_id": ...}
     metadata = json.load(open(f'../datasets/{config["dataset_name"]}/metadata.json', 'r'))
@@ -774,8 +777,8 @@ def prepare_dataset(config: dict, i_fold:int=0) :
         encoding='utf-8').to_records(index=False, column_dtypes={'student_id': int, 'item_id': int, "correct": float,
                                                                  "dimension_id": int})
 
-    train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata)
-    valid_data = dataset.LoaderDataset(valid_quadruplets, concept_map, metadata)
-    test_data = dataset.LoaderDataset(test_quadruplets, concept_map, metadata)
+    train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata, nb_modalities)
+    valid_data = dataset.LoaderDataset(valid_quadruplets, concept_map, metadata, nb_modalities)
+    test_data = dataset.LoaderDataset(test_quadruplets, concept_map, metadata, nb_modalities)
 
-    return concept_map, train_data, valid_data, test_data
+    return train_data, valid_data, test_data
