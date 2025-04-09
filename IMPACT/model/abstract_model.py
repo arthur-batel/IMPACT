@@ -187,7 +187,7 @@ class AbstractModel(ABC):
         U_resp_nb = torch.zeros(size=(self.model.user_n, self.model.concept_n)).to(device, non_blocking=True)
 
         self.model.eval()
-        with torch.no_grad(), torch.amp.autocast(device):
+        with torch.no_grad(), torch.amp.autocast(str(device)):
             data_loader = data.DataLoader(dataloader, batch_size=1, shuffle=False)
             for data_batch in data_loader:
                 user_ids = data_batch[:, 0].long()
@@ -218,7 +218,7 @@ class AbstractModel(ABC):
 
                 optimizer.zero_grad()
 
-                with torch.amp.autocast(device):
+                with torch.amp.autocast(str(device)):
                     loss = self._compute_loss(user_ids, item_ids, dim_ids, labels)
 
                 scaler.scale(loss).backward()
@@ -227,7 +227,7 @@ class AbstractModel(ABC):
 
             # Early stopping
             if (ep + 1) % eval_freq == 0:
-                with torch.no_grad(), torch.amp.autocast(device):
+                with torch.no_grad(), torch.amp.autocast(str(device)):
                     valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     # Checking loss improvement
@@ -262,7 +262,7 @@ class AbstractModel(ABC):
 
                 optimizer.zero_grad()
 
-                with torch.amp.autocast(device):
+                with torch.amp.autocast(str(device)):
                     loss = self._compute_loss(user_ids, item_ids, dim_ids, labels)
 
                 scaler.scale(loss).backward()
@@ -273,7 +273,7 @@ class AbstractModel(ABC):
 
             # Early stopping
             if (ep + 1) % eval_freq == 0:
-                with torch.no_grad(), torch.amp.autocast(device):
+                with torch.no_grad(), torch.amp.autocast(str(device)):
                     train_loss = np.mean(loss_list)
                     valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
@@ -318,7 +318,7 @@ class AbstractModel(ABC):
 
                 optimizer.zero_grad()
 
-                with torch.amp.autocast(device):
+                with torch.amp.autocast(str(device)):
                     loss = self._compute_loss(user_ids, item_ids, dim_ids, labels)
 
                 scaler.scale(loss).backward()
@@ -327,7 +327,7 @@ class AbstractModel(ABC):
 
             # Early stopping
             if (ep + 1) % eval_freq == 0:
-                with torch.no_grad(), torch.amp.autocast(device):
+                with torch.no_grad(), torch.amp.autocast(str(device)):
                     valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
                     with warnings.catch_warnings(record=True) as w:
                         warnings.simplefilter("always")
@@ -363,7 +363,7 @@ class AbstractModel(ABC):
 
                 optimizer.zero_grad()
 
-                with torch.amp.autocast(device):
+                with torch.amp.autocast(str(device)):
                     loss = self._compute_loss(user_ids, item_ids, dim_ids, labels)
 
                 scaler.scale(loss).backward()
@@ -372,7 +372,7 @@ class AbstractModel(ABC):
 
             # Early stopping
             if (ep + 1) % eval_freq == 0:
-                with torch.no_grad(), torch.amp.autocast(device):
+                with torch.no_grad(), torch.amp.autocast(str(device)):
                     valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     with warnings.catch_warnings(record=True) as w:
@@ -408,7 +408,7 @@ class AbstractModel(ABC):
 
                 optimizer.zero_grad()
 
-                with torch.amp.autocast(device):
+                with torch.amp.autocast(str(device)):
                     loss = self._compute_loss(user_ids, item_ids, dim_ids, labels)
 
                 scaler.scale(loss).backward()
@@ -417,7 +417,7 @@ class AbstractModel(ABC):
 
             # Early stopping
             if (ep + 1) % eval_freq == 0:
-                with torch.no_grad(), torch.amp.autocast(device):
+                with torch.no_grad(), torch.amp.autocast(str(device)):
                     valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     with warnings.catch_warnings(record=True) as w:
@@ -455,7 +455,7 @@ class AbstractModel(ABC):
 
                 optimizer.zero_grad()
 
-                with torch.amp.autocast(device):
+                with torch.amp.autocast(str(device)):
                     loss = self._compute_loss(user_ids, item_ids, dim_ids, labels)
 
                 scaler.scale(loss).backward()
@@ -466,7 +466,7 @@ class AbstractModel(ABC):
 
             # Early stopping
             if (ep + 1) % eval_freq == 0:
-                with torch.no_grad(), torch.amp.autocast(device):
+                with torch.no_grad(), torch.amp.autocast(str(device)):
                     train_loss = np.mean(loss_list)
                     valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
                     with warnings.catch_warnings(record=True) as w:
@@ -519,7 +519,7 @@ class AbstractModel(ABC):
 
                 optimizer.zero_grad()
 
-                with torch.amp.autocast(device):
+                with torch.amp.autocast(str(device)):
                     loss = self._compute_loss(user_ids, item_ids, dim_ids, labels)
 
                 scaler.scale(loss).backward()
@@ -528,7 +528,7 @@ class AbstractModel(ABC):
 
             # Early stopping
             if (ep + 1) % eval_freq == 0:
-                with torch.no_grad(), torch.amp.autocast(device):
+                with torch.no_grad(), torch.amp.autocast(str(device)):
                     valid_loss, valid_metric, valid_mae = self.evaluate_valid(valid_loader, valid_data.log_tensor)
 
                     with warnings.catch_warnings(record=True) as w:
@@ -562,7 +562,7 @@ class AbstractModel(ABC):
 
                 optimizer.zero_grad()
 
-                with torch.amp.autocast(device):
+                with torch.amp.autocast(str(device)):
                     loss = self._compute_loss(user_ids, item_ids, dim_ids, labels)
 
                 scaler.scale(loss).backward()
