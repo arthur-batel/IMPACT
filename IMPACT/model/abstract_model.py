@@ -158,7 +158,7 @@ class AbstractModel(ABC):
             valid_batch_size = len(valid_data) // 2 + 1
         valid_loader = data.DataLoader(valid_data, batch_size=valid_batch_size, shuffle=False, pin_memory=False)
 
-        self.U_mean = self.precompute_user_average_resp(valid_data, device)
+        self.U_mean = self.precompute_user_average_resp(valid_data, str(device))
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
