@@ -639,7 +639,7 @@ class AbstractModel(ABC):
                 self.state = "eval"
                 # Call the actual method
                 self.model.eval()
-                with torch.no_grad(), torch.amp.autocast(self.config['device']):
+                with torch.no_grad(), torch.amp.autocast(str(self.config['device'])):
                     result = func(*args, **kwargs)
             finally:
                 # Restore the previous state after method execution
