@@ -164,7 +164,7 @@ class AbstractModel(ABC):
 
         # Reduce the learning rate when a metric has stopped improving
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=2, factor=0.5)
-        scaler = torch.amp.GradScaler('cuda')
+        scaler = torch.amp.GradScaler(str(self.config['device']))
 
         self.model.train()
 
