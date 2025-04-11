@@ -158,8 +158,6 @@ class AbstractModel(ABC):
             valid_batch_size = len(valid_data) // 2 + 1
         valid_loader = data.DataLoader(valid_data, batch_size=valid_batch_size, shuffle=False, pin_memory=False)
 
-        self.U_mean = self.precompute_user_average_resp(valid_data, str(device))
-
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
         # Reduce the learning rate when a metric has stopped improving
@@ -308,6 +306,8 @@ class AbstractModel(ABC):
         patience = self.config['patience']
         device = self.config['device']
 
+        U_mean = self.precompute_user_average_resp(valid_data, str(device))
+
         for ep in range(
                 epochs):  # _,ep in tqdm(enumerate(range(epochs + 1)), total=epochs, disable=self.config['disable_tqdm']) :
             for data_batch in train_loader:
@@ -331,7 +331,7 @@ class AbstractModel(ABC):
                     valid_loss, valid_metric = self.evaluate_valid(valid_loader, valid_data.log_tensor)
                     with warnings.catch_warnings(record=True) as w:
                         warnings.simplefilter("always")
-                        valid_doa = compute_pc_er(self.model.concept_n, self.U_mean, self.get_user_emb())
+                        valid_doa = compute_pc_er(self.model.concept_n, U_mean, self.get_user_emb())
                         valid_doa = valid_doa[valid_doa != 0].mean()
 
                     if (self.metric_sign * self.best_valid_metric > self.metric_sign * valid_metric) or (
