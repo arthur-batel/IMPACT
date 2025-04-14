@@ -20,7 +20,7 @@ warnings.filterwarnings(
     category=UserWarning
 )
 
-
+#test
 class CoVWeightingLoss(nn.Module):
     def __init__(self, device: str):
         super().__init__() 
