@@ -72,8 +72,8 @@ class MIRT2PL(nn.Module):
         a = self.item_discrimination(item_ids)
         b = self.item_difficulty(item_ids)
         theta = self.users_emb(user_ids)
-
-        return F.sigmoid(torch.dot(a, theta) - b)
+        r = F.sigmoid(torch.bmm(a.unsqueeze(1), theta.unsqueeze(2)).squeeze(2) - b).squeeze(1)
+        return r +1 
 
     def get_regularizer(self):
         return self.users_emb.weight.norm().pow(2) + self.item_discrimination.weight.norm().pow(
@@ -90,7 +90,7 @@ class MIRT(AbstractModel):
         self.model = MIRT2PL(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
                              train_data)
 
-        self.loss= CrossEntropyLoss
+        self.loss= CrossEntropyLoss()
 
         super().init_model(train_data, valid_data)
 
@@ -105,7 +105,7 @@ class MIRT(AbstractModel):
     def _loss_function(self, pred, real):
 
         R = self.model.get_regularizer()
-        return self.loss(pred, real) + self.config['lambda_'] * R
+        return self.loss(pred-1, real-1) + self.config['lambda'] * R
 
     def get_user_emb(self):
         super().get_user_emb()
