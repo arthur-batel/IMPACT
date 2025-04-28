@@ -115,7 +115,7 @@ class CoVWeightingLoss(nn.Module):
 @torch.jit.export
 class IMPACTModel(nn.Module):
     '''
-    Graph Convolutional Cognitive Diagnostic
+    Interpretable Multi-Modal Cognitive Diagnostic Model
     '''
 
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
@@ -258,7 +258,7 @@ class IMPACTModel(nn.Module):
 @torch.jit.export
 class IMPACTModel_low_mem(nn.Module):
     '''
-    Graph Convolutional Cognitive Diagnostic
+    Interpretable Multi-Modal Cognitive Diagnostic Model
     '''
 
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
