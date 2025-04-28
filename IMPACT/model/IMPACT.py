@@ -150,10 +150,10 @@ class IMPACTModel(nn.Module):
             for concept in concept_list:
                 k2q[concept].add(item)
         items_by_concepts = list(map(set, k2q.values()))
-        for i, c in enumerate(items_by_concepts):
-            c_list = torch.tensor(list(c), dtype=torch.long, device=self.device)
+        for i, q in enumerate(items_by_concepts):
+            q_list = torch.tensor(list(q), dtype=torch.long, device=self.device)
             self.users_emb.weight.data[:, i].add_(
-                (self.R[:, c_list].sqrt().sum(dim=1) / (torch.sum(self.R[:, c_list] != 0, dim=1) + 1e-12))
+                (self.R[:, q_list].sqrt().sum(dim=1) / (torch.sum(self.R[:, q_list] != 0, dim=1) + 1e-12))
             )
 
         response_values = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.device)
