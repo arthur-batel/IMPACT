@@ -764,10 +764,10 @@ class AbstractModel(ABC):
         return None
 
     def evaluate_valid(self, valid_dataloader: data.DataLoader, log_tensor):
-        loss_list, pred_list, label_list = self._evaluate_preds(valid_dataloader)
+        loss_tensor, pred_tensor, label_tensor = self._evaluate_preds(valid_dataloader)
 
-        return torch.mean(torch.tensor(loss_list, dtype=torch.float)), root_mean_squared_error(
-            torch.tensor(pred_list, dtype=torch.float), torch.tensor(label_list, dtype=torch.float)), pred_list
+        return torch.mean(loss_tensor), self.valid_metric(
+            pred_tensor, label_tensor)
 
     def evaluate_predictions(self, test_dataset: data.DataLoader):
         test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False)

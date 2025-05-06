@@ -115,7 +115,7 @@ class CoVWeightingLoss(nn.Module):
 @torch.jit.export
 class IMPACTModel(nn.Module):
     '''
-    Graph Convolutional Cognitive Diagnostic
+    Interpretable Multi-Modal Cognitive Diagnostic Model
     '''
 
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
@@ -171,11 +171,10 @@ class IMPACTModel(nn.Module):
             item_indices = item_indices.reshape(-1)  # [nb_items_in_concept * nb_mod_max]
 
             # Repeat response values for each item
-            response_values_repeated = response_values.repeat(len(items)).unsqueeze(
-                1)  # [nb_mod*nb_items_in_concept*]
+            response_values_repeated = response_values.repeat(len(items))  # [nb_mod*nb_items_in_concept]
 
             # Set the embeddings at the concept dimension to the response values
-            self.item_response_embeddings.weight.data[item_indices, :] = response_values_repeated
+            self.item_response_embeddings.weight.data[item_indices, concept_index] = response_values_repeated
 
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
@@ -258,7 +257,7 @@ class IMPACTModel(nn.Module):
 @torch.jit.export
 class IMPACTModel_low_mem(nn.Module):
     '''
-    Graph Convolutional Cognitive Diagnostic
+    Interpretable Multi-Modal Cognitive Diagnostic Model
     '''
 
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
