@@ -115,7 +115,7 @@ class CoVWeightingLoss(nn.Module):
 @torch.jit.export
 class IMPACTModel(nn.Module):
     '''
-    Graph Convolutional Cognitive Diagnostic
+    Interpretable Multi-Modal Cognitive Diagnostic Model
     '''
 
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
@@ -258,7 +258,7 @@ class IMPACTModel(nn.Module):
 @torch.jit.export
 class IMPACTModel_low_mem(nn.Module):
     '''
-    Graph Convolutional Cognitive Diagnostic
+    Interpretable Multi-Modal Cognitive Diagnostic Model
     '''
 
     def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
@@ -443,26 +443,28 @@ class IMPACT(AbstractModel):
         loss_list = []
         pred_list = []
         label_list = []
+        nb_modalities_list = []
 
         for data_batch in valid_dataloader:
             user_ids = data_batch[:, 0].long()
             item_ids = data_batch[:, 1].long()
-
+            nb_modalities = valid_dataloader.dataset.nb_modalities[item_ids]
             labels = data_batch[:, 2]
             concept_ids = data_batch[:, 3].long()
 
             preds = self.model(user_ids, item_ids, concept_ids)
             total_loss = self._compute_loss(user_ids, item_ids, concept_ids, labels)
             loss_list.append(total_loss.detach())
-
+            nb_modalities_list.append(nb_modalities)
             pred_list.append(preds)
             label_list.append(labels)
 
         pred_tensor = torch.cat(pred_list)
         label_tensor = torch.cat(label_list)
+        nb_modalities_tensor = torch.cat(nb_modalities_list)
         mean_loss = torch.mean(torch.stack(loss_list))
 
-        return mean_loss, self.valid_metric(pred_tensor, label_tensor)
+        return mean_loss, self.valid_metric(pred_tensor, label_tensor, nb_modalities_tensor)
 
     def _compute_loss(self, users_id, items_id, concepts_id, labels):
         device = self.config['device']

@@ -102,8 +102,11 @@ class AbstractModel(ABC):
             'mi_acc': micro_ave_accuracy,
             'mi_prec': micro_ave_precision,
             'mi_rec': micro_ave_recall,
-            'mi_f1': micro_ave_f1,
+            'mi_f_b': micro_f_beta,
             'mi_auc': micro_ave_auc,
+            'ma_prec': macro_precision,
+            'ma_rec': macro_recall,
+            'ma_f_b': macro_f_beta,
         }
         assert set(self.pred_metrics).issubset(self.pred_metric_functions.keys())
 
@@ -655,10 +658,12 @@ class AbstractModel(ABC):
         loss_list = []
         pred_list = []
         label_list = []
+        nb_modalities_list = []
 
         for data_batch in data_loader:
             user_ids = data_batch[:, 0].long()
             item_ids = data_batch[:, 1].long()
+            nb_modalities = data_loader.dataset.nb_modalities[item_ids]
             labels = data_batch[:, 2]
             dim_ids = data_batch[:, 3].long()
 
@@ -668,13 +673,15 @@ class AbstractModel(ABC):
             loss_list.append(loss)
             pred_list.append(preds.detach())
             label_list.append(labels.detach())
+            nb_modalities_list.append(nb_modalities.detach())
 
         # Concatenate lists into tensors
         loss_tensor = torch.stack(loss_list)  # Assumes each loss is a scalar tensor
         pred_tensor = torch.cat(pred_list, dim=0)
         label_tensor = torch.cat(label_list, dim=0)
+        nb_modalities_tensor = torch.cat(nb_modalities_list, dim=0)
 
-        return loss_tensor, pred_tensor, label_tensor
+        return loss_tensor, pred_tensor, label_tensor, nb_modalities_tensor
 
     def _save_user_emb(self) -> None:
         path = self.config['embs_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
@@ -764,26 +771,26 @@ class AbstractModel(ABC):
         return None
 
     def evaluate_valid(self, valid_dataloader: data.DataLoader, log_tensor):
-        loss_list, pred_list, label_list = self._evaluate_preds(valid_dataloader)
+        loss_tensor, pred_tensor, label_tensor, _ = self._evaluate_preds(valid_dataloader)
 
-        return torch.mean(torch.tensor(loss_list, dtype=torch.float)), root_mean_squared_error(
-            torch.tensor(pred_list, dtype=torch.float), torch.tensor(label_list, dtype=torch.float)), pred_list
+        return torch.mean(loss_tensor), self.valid_metric(pred_tensor, label_tensor)
 
     def evaluate_predictions(self, test_dataset: data.DataLoader):
         test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False)
-        loss_tensor, pred_tensor, label_tensor = self._evaluate_preds(test_dataloader)
+        loss_tensor, pred_tensor, label_tensor , nb_modalities_tensor = self._evaluate_preds(test_dataloader)
         # Convert tensors to double if needed
         pred_tensor = pred_tensor.double()
         label_tensor = label_tensor.double()
+        nb_modalities_tensor = nb_modalities_tensor.long()
 
         # Compute metrics in one pass using a dictionary comprehension
-        results = {metric: self.pred_metric_functions[metric](pred_tensor, label_tensor).cpu().item()
+        results = {metric: self.pred_metric_functions[metric](pred_tensor, label_tensor, nb_modalities_tensor).cpu().item()
                    for metric in self.pred_metrics}
 
         # Optionally keep the predictions and labels as tensors to avoid conversion overhead
         results.update({
             'preds': pred_tensor,
-            'labels': label_tensor
+            'labels': label_tensor,
         })
 
         return results
@@ -860,7 +867,7 @@ def compute_doa(emb:torch.Tensor, test_data):
                                       test_data.concept_map))
 
 @torch.jit.script
-def root_mean_squared_error(y_true, y_pred):
+def root_mean_squared_error(y_true, y_pred, nb_modalities):
     """
     Compute the rmse metric (Regression)
 
@@ -875,7 +882,7 @@ def root_mean_squared_error(y_true, y_pred):
 
 
 @torch.jit.script
-def mean_absolute_error(y_true, y_pred):
+def mean_absolute_error(y_true, y_pred, nb_modalities):
     """
     Compute the mae metric (Regression)
 
@@ -890,7 +897,7 @@ def mean_absolute_error(y_true, y_pred):
 
 
 @torch.jit.script
-def r2(gt, pd):
+def r2(gt, pd, nb_modalities):
     """
     Compute the r2 metric (Regression)
 
@@ -910,9 +917,14 @@ def r2(gt, pd):
 
     return r2
 
+@torch.jit.script
+def round_pred(y_true, y_pred, nb_modalities):
+    y_true = torch.round(y_true * (nb_modalities - 1))
+    y_pred = torch.round(y_pred * (nb_modalities - 1))
+    return y_true, y_pred
 
 @torch.jit.script
-def micro_ave_accuracy(y_true, y_pred):
+def micro_ave_accuracy(y_true, y_pred, nb_modalities):
     """
     Compute the micro-averaged accuracy (Classification)
 
@@ -923,28 +935,13 @@ def micro_ave_accuracy(y_true, y_pred):
     Returns:
         Tensor: The micro-averaged precision.
     """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
     return torch.mean((y_true == y_pred).float())
 
 
 @torch.jit.script
-def micro_ave_precision(y_true, y_pred):
-    """
-    Compute the micro-averaged precision (Binary classification)
-
-    Args:
-        y_true (Tensor): Ground truth labels.
-        y_pred (Tensor): Predicted labels.
-
-    Returns:
-        Tensor: The micro-averaged precision.
-    """
-    true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
-    predicted_positives = torch.sum(y_pred == 2).float()
-    return true_positives / predicted_positives
-
-
-@torch.jit.script
-def micro_ave_recall(y_true, y_pred):
+def micro_ave_recall(y_true, y_pred, nb_modalities):
     """
     Compute the micro-averaged recall (Binary classification)
 
@@ -955,29 +952,14 @@ def micro_ave_recall(y_true, y_pred):
     Returns:
         Tensor: The micro-averaged recall.
     """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
     true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
     actual_positives = torch.sum(y_true == 2).float()
     return true_positives / actual_positives
 
 
-@torch.jit.script
-def micro_ave_f1(y_true, y_pred):
-    """
-    Compute the micro-averaged f1 (Binary classification)
-
-    Args:
-        y_true (Tensor): Ground truth labels.
-        y_pred (Tensor): Predicted labels.
-
-    Returns:
-        Tensor: The micro-averaged f1.
-    """
-    precision = micro_ave_precision(y_true, y_pred)
-    recall = micro_ave_recall(y_true, y_pred)
-    return 2 * (precision * recall) / (precision + recall)
-
-
-def micro_ave_auc(y_true, y_pred):
+def micro_ave_auc(y_true, y_pred, nb_modalities):
     """
     Compute the micro-averaged roc-auc (Binary classification)
 
@@ -992,3 +974,81 @@ def micro_ave_auc(y_true, y_pred):
     y_pred = y_pred.cpu().int().numpy()
     roc_auc = roc_auc_score(y_true.ravel(), y_pred.ravel(), average='micro')
     return torch.tensor(roc_auc)
+
+
+
+@torch.jit.script
+def micro_ave_precision(y_true, y_pred, nb_modalities):
+    """
+    Compute the micro-averaged precision (Binary classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
+    predicted_positives = torch.sum(y_pred == 2).float()
+    return true_positives / predicted_positives
+
+
+def macro_precision(y_true, y_pred, nb_modalities):
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    classes = torch.arange(nb_modalities.max)+1
+    precision_tensor = torch.zeros(len(classes))
+
+    for i,cls in enumerate(classes):
+        true_positives = torch.sum((y_true == cls) & (y_pred == cls)).float()
+        predicted_positives = torch.sum(y_pred == cls).float()
+        if predicted_positives > 0:
+            precision_tensor[i] = true_positives / predicted_positives
+
+    return precision_tensor.mean()
+
+def macro_recall(y_true, y_pred, nb_modalities):
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    classes = torch.arange(nb_modalities.max())+1
+    recall_tensor = torch.zeros(len(classes))
+    for i,cls in enumerate(classes):
+        true_positives = torch.sum((y_true == cls) & (y_pred == cls)).float()
+        actual_positives = torch.sum(y_true == cls).float()
+        if actual_positives > 0:
+            recall_tensor[i] = true_positives / actual_positives
+    print('actual_tensor : '+str(recall_tensor))
+    return recall_tensor.mean()
+
+
+
+
+def macro_f_beta(y_true, y_pred, nb_modalities, beta:float=1):
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+    beta_squared = torch.square(beta)
+    classes = torch.arange(nb_modalities.max())+1
+    f_beta_tensor = torch.zeros(len(classes))
+    for i, cls in enumerate(classes):
+        true_positives = torch.sum((y_true == cls) & (y_pred == cls)).float()
+        predicted_positives = torch.sum(y_pred == cls).float()
+        actual_positives = torch.sum(y_true == cls).float()
+        precision = true_positives / predicted_positives
+        recall = true_positives / actual_positives
+        if predicted_positives > 0 and actual_positives > 0:
+            f_beta_tensor[i] = (1 + beta_squared) * (precision * recall) / (precision + recall)
+
+    print('tensor : ' f'{f_beta_tensor}')
+    return f_beta_tensor.mean()
+
+
+def micro_f_beta(y_true, y_pred, nb_modalities, beta:float=1):
+    beta_squared = torch.square(beta)
+    precision = micro_ave_precision(y_true, y_pred, nb_modalities)
+    recall = micro_ave_recall(y_true, y_pred, nb_modalities)
+    return (1 + beta_squared) * (precision * recall) / (precision + recall)
+
+
+
