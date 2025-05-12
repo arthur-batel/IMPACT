@@ -171,10 +171,11 @@ class IMPACTModel(nn.Module):
             item_indices = item_indices.reshape(-1)  # [nb_items_in_concept * nb_mod_max]
 
             # Repeat response values for each item
-            response_values_repeated = response_values.repeat(len(items))  # [nb_mod*nb_items_in_concept]
+            response_values_repeated = response_values.repeat(len(items)).unsqueeze(
+                1)  # [nb_mod*nb_items_in_concept*]
 
             # Set the embeddings at the concept dimension to the response values
-            self.item_response_embeddings.weight.data[item_indices, concept_index] = response_values_repeated
+            self.item_response_embeddings.weight.data[item_indices, :] = response_values_repeated
 
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
@@ -442,26 +443,28 @@ class IMPACT(AbstractModel):
         loss_list = []
         pred_list = []
         label_list = []
+        nb_modalities_list = []
 
         for data_batch in valid_dataloader:
             user_ids = data_batch[:, 0].long()
             item_ids = data_batch[:, 1].long()
-
+            nb_modalities = valid_dataloader.dataset.nb_modalities[item_ids]
             labels = data_batch[:, 2]
             concept_ids = data_batch[:, 3].long()
 
             preds = self.model(user_ids, item_ids, concept_ids)
             total_loss = self._compute_loss(user_ids, item_ids, concept_ids, labels)
             loss_list.append(total_loss.detach())
-
+            nb_modalities_list.append(nb_modalities)
             pred_list.append(preds)
             label_list.append(labels)
 
         pred_tensor = torch.cat(pred_list)
         label_tensor = torch.cat(label_list)
+        nb_modalities_tensor = torch.cat(nb_modalities_list)
         mean_loss = torch.mean(torch.stack(loss_list))
 
-        return mean_loss, self.valid_metric(pred_tensor, label_tensor)
+        return mean_loss, self.valid_metric(pred_tensor, label_tensor, nb_modalities_tensor)
 
     def _compute_loss(self, users_id, items_id, concepts_id, labels):
         device = self.config['device']
