@@ -956,7 +956,10 @@ def micro_ave_recall(y_true, y_pred, nb_modalities):
 
     true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
     actual_positives = torch.sum(y_true == 2).float()
-    return true_positives / actual_positives
+    if actual_positives > 0:
+        return true_positives / actual_positives
+    else:
+        return torch.tensor(0)
 
 
 def micro_ave_auc(y_true, y_pred, nb_modalities):
@@ -993,7 +996,10 @@ def micro_ave_precision(y_true, y_pred, nb_modalities):
 
     true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
     predicted_positives = torch.sum(y_pred == 2).float()
-    return true_positives / predicted_positives
+    if predicted_positives > 0:
+        return true_positives / predicted_positives
+    else:
+        return torch.tensor(0)
 
 
 def macro_precision(y_true, y_pred, nb_modalities):
