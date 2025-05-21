@@ -2,6 +2,8 @@ import functools
 import os
 from collections import defaultdict
 
+from deprecated import deprecated
+
 from torch.masked import MaskedTensor
 import torch.nn as nn
 
@@ -250,10 +252,15 @@ class IMPACTModel(nn.Module):
 
         return mod_to_resp(torch.argmin(p_uim + self.mask[item_ids, :], dim=1), self.nb_modalities[item_ids])
 
-    def get_regularizer(self):
-        return self.users_emb.weight.norm().pow(2) + self.item_response_embeddings.weight.norm().pow(
+    def get_regularizer(self,unique_users, item_ids):
+        im_idx = self.im_idx[item_ids]  # [batch_size, nb_mod]
+        i0_idx = self.i0_idx[item_ids]  # [batch_size, nb_mod]
+        in_idx = self.in_idx[item_ids] 
+        return self.users_emb.weight[unique_users].norm().pow(2) + self.item_response_embeddings.weight[im_idx].norm().pow(
+            2) + self.item_response_embeddings.weight[i0_idx].norm().pow(
+            2)+ self.item_response_embeddings.weight[in_idx].norm().pow(
             2)
-
+@deprecated
 @torch.jit.export
 class IMPACTModel_low_mem(nn.Module):
     '''
@@ -483,7 +490,9 @@ class IMPACT(AbstractModel):
                                  users_id=users_id, items_id=items_id,
                                  concepts_id=concepts_id, R=self.model.R, users_emb=self.model.users_emb.weight)
 
-        R = self.model.get_regularizer()
+        unique_users =  torch.unique(users_id)
+        unique_items = torch.unique(items_id)
+        R = self.model.get_regularizer(unique_users, unique_items)
 
         # Stack losses into a tensor
         losses = torch.stack([L1, L3])  # Shape: (4,)
