@@ -23,7 +23,7 @@ from sklearn.metrics import r2_score
 import tkinter as tk
 
 from IMPACT.utils import utils
-
+from liriscat.utils import compute_doa_train_test
 
 class AbstractModel(ABC):
     def __init__(self, name: str = None, **config):
@@ -115,6 +115,7 @@ class AbstractModel(ABC):
             'pc-er': compute_pc_er,
             'doa': compute_doa,
             'rm': compute_rm,
+            'doa_new': compute_doa_train_test,
         }
         assert set(self.profile_metrics).issubset(self.profile_metric_functions.keys())
 
@@ -791,6 +792,7 @@ class AbstractModel(ABC):
         results.update({
             'preds': pred_tensor,
             'labels': label_tensor,
+            'nb_modalities': nb_modalities_tensor
         })
 
         return results
@@ -1034,7 +1036,7 @@ def macro_recall(y_true, y_pred, nb_modalities):
 
 def macro_f_beta(y_true, y_pred, nb_modalities, beta:float=1):
     y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
-    beta_squared = torch.square(beta)
+    beta_squared = beta * beta
     classes = torch.arange(nb_modalities.max())+1
     f_beta_tensor = torch.zeros(len(classes))
     for i, cls in enumerate(classes):
@@ -1051,7 +1053,7 @@ def macro_f_beta(y_true, y_pred, nb_modalities, beta:float=1):
 
 
 def micro_f_beta(y_true, y_pred, nb_modalities, beta:float=1):
-    beta_squared = torch.square(beta)
+    beta_squared = beta * beta
     precision = micro_ave_precision(y_true, y_pred, nb_modalities)
     recall = micro_ave_recall(y_true, y_pred, nb_modalities)
     return (1 + beta_squared) * (precision * recall) / (precision + recall)

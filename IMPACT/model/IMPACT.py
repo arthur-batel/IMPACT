@@ -175,6 +175,7 @@ class IMPACTModel(nn.Module):
             # Repeat response values for each item
             response_values_repeated = response_values.repeat(len(items))  # [nb_mod*nb_items_in_concept,1]
 
+
             # Set the embeddings at the concept dimension to the response values
             self.item_response_embeddings.weight.data[item_indices, concept_index] = response_values_repeated
 
@@ -507,7 +508,7 @@ class IMPACT(AbstractModel):
 
     def get_user_emb(self):
         super().get_user_emb()
-        return self.model.users_emb.weight.data
+        return self.model.users_emeight.data
 
 
 @torch.jit.script
