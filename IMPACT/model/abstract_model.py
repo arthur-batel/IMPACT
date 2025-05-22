@@ -23,7 +23,7 @@ from sklearn.metrics import r2_score
 import tkinter as tk
 
 from IMPACT.utils import utils
-from liriscat.utils import compute_doa_train_test
+from liriscat.utils import compute_meta_doa
 
 class AbstractModel(ABC):
     def __init__(self, name: str = None, **config):
@@ -115,7 +115,7 @@ class AbstractModel(ABC):
             'pc-er': compute_pc_er,
             'doa': compute_doa,
             'rm': compute_rm,
-            'doa_new': compute_doa_train_test,
+            'meta_doa': compute_meta_doa,
         }
         assert set(self.profile_metrics).issubset(self.profile_metric_functions.keys())
 
