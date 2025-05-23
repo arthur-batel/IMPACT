@@ -187,8 +187,6 @@ class IMPACTModel(nn.Module):
         self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1, device=self.device))
         self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2, device=self.device))
 
-
-        
         if not load_params:
 
             self.nb_modalities = nb_modalities
@@ -252,10 +250,10 @@ class IMPACTModel(nn.Module):
 
         return mod_to_resp(torch.argmin(p_uim + self.mask[item_ids, :], dim=1), self.nb_modalities[item_ids])
 
-    def get_regularizer(self,unique_users, item_ids):
-        im_idx = self.im_idx[item_ids]  # [batch_size, nb_mod]
-        i0_idx = self.i0_idx[item_ids]  # [batch_size, nb_mod]
-        in_idx = self.in_idx[item_ids] 
+    def get_regularizer(self,unique_users, unique_items):
+        im_idx = self.im_idx[unique_items]  # [batch_size, nb_mod]
+        i0_idx = self.i0_idx[unique_items]  # [batch_size, nb_mod]
+        in_idx = self.in_idx[unique_items] 
         return self.users_emb.weight[unique_users].norm().pow(2) + self.item_response_embeddings.weight[im_idx].norm().pow(
             2) + self.item_response_embeddings.weight[i0_idx].norm().pow(
             2)+ self.item_response_embeddings.weight[in_idx].norm().pow(
