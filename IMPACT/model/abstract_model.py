@@ -151,14 +151,14 @@ class AbstractModel(ABC):
 
         self.best_model_params = self.model.state_dict()
 
-        train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, pin_memory=False)
+        train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, pin_memory=self.config['pin_memory'], num_workers=self.config['num_workers'])
         # Choosing an appropriate batch_size for the validation data
         valid_batch_size = 20000
         if len(valid_data) < valid_batch_size:
             valid_batch_size = len(valid_data)
         elif abs(len(valid_data) - valid_batch_size) < 500:
             valid_batch_size = len(valid_data) // 2 + 1
-        valid_loader = data.DataLoader(valid_data, batch_size=valid_batch_size, shuffle=False, pin_memory=False)
+        valid_loader = data.DataLoader(valid_data, batch_size=valid_batch_size, shuffle=False, pin_memory=self.config['pin_memory'], num_workers=self.config['num_workers'])
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
@@ -188,7 +188,7 @@ class AbstractModel(ABC):
 
         self.model.eval()
         with torch.no_grad(), torch.amp.autocast(str(device)):
-            data_loader = data.DataLoader(dataloader, batch_size=1, shuffle=False)
+            data_loader = data.DataLoader(dataloader, batch_size=1, shuffle=False, pin_memory=self.config['pin_memory'], num_workers=self.config['num_workers'])
             for data_batch in data_loader:
                 user_ids = data_batch[:, 0].long()
                 item_ids = data_batch[:, 1].long()
@@ -775,7 +775,7 @@ class AbstractModel(ABC):
         return torch.mean(loss_tensor), self.valid_metric(pred_tensor, label_tensor,nb_modalities)
 
     def evaluate_predictions(self, test_dataset: data.DataLoader):
-        test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False)
+        test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False, pin_memory=self.config['pin_memory'],num_workers=self.config['num_workers'])
         loss_tensor, pred_tensor, label_tensor , nb_modalities_tensor = self._evaluate_preds(test_dataloader)
         # Convert tensors to double if needed
         pred_tensor = pred_tensor.double()
@@ -811,7 +811,7 @@ def compute_pc_er(emb, test_data):
     U_resp_nb = torch.zeros(size=(test_data.n_users, test_data.n_categories)).to(test_data.raw_data_array.device,
                                                                                  non_blocking=True)
 
-    data_loader = data.DataLoader(test_data, batch_size=1, shuffle=False)
+    data_loader = data.DataLoader(test_data, batch_size=1, shuffle=False, num_workers=0)
     for data_batch in data_loader:
         user_ids = data_batch[:, 0].long()
         item_ids = data_batch[:, 1].long()
