@@ -508,7 +508,7 @@ class IMPACT(AbstractModel):
 
     def get_user_emb(self):
         super().get_user_emb()
-        return self.model.users_emeight.data
+        return self.model.users_emb.weight.data
 
 
 @torch.jit.script
