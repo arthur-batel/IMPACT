@@ -188,8 +188,6 @@ class IMPACTModel(nn.Module):
         self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1, device=self.device))
         self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2, device=self.device))
 
-
-        
         if not load_params:
 
             self.nb_modalities = nb_modalities
@@ -223,14 +221,14 @@ class IMPACTModel(nn.Module):
         self.register_buffer('i0_idx',
                              torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent, persistent=False) # Left sentinels indices
 
-    def get_embeddings(self, user_ids, item_ids, concept_ids):
+    def get_embeddings(self, users_id, items_id, concepts_id):
         # User embeddings
-        u_emb = self.users_emb(user_ids)  # [batch_size, embedding_dim]
+        u_emb = self.users_emb(users_id)  # [batch_size, embedding_dim]
 
         # Compute item-response indices
-        im_idx = self.im_idx[item_ids]  # [batch_size, nb_mod]
-        i0_idx = self.i0_idx[item_ids]  # [batch_size, nb_mod]
-        in_idx = self.in_idx[item_ids]  # [batch_size, nb_mod]
+        im_idx = self.im_idx[items_id]  # [batch_size, nb_mod]
+        i0_idx = self.i0_idx[items_id]  # [batch_size, nb_mod]
+        in_idx = self.in_idx[items_id]  # [batch_size, nb_mod]
 
         # Item-Response embeddings
         im_emb_prime = self.item_response_embeddings(im_idx)  # [batch_size, nb_mod, embedding_dim]
@@ -239,24 +237,24 @@ class IMPACTModel(nn.Module):
 
         return u_emb, im_emb_prime, i0_emb_prime, in_emb_prime, None
 
-    def forward(self, user_ids, item_ids, concept_ids):
+    def forward(self, users_id, items_id, concepts_id):
         # I
-        im_idx = self.im_idx[item_ids]
+        im_idx = self.im_idx[items_id]
         im_emb = self.item_response_embeddings(im_idx)
 
         # E
-        u_emb = self.users_emb(user_ids)
+        u_emb = self.users_emb(users_id)
 
         # p_uim
         diff = u_emb.unsqueeze(1) - im_emb
         p_uim = torch.sum(diff ** 2, dim=2)
 
-        return mod_to_resp(torch.argmin(p_uim + self.mask[item_ids, :], dim=1), self.nb_modalities[item_ids])
+        return mod_to_resp(torch.argmin(p_uim + self.mask[items_id, :], dim=1), self.nb_modalities[items_id])
 
-    def get_regularizer(self,unique_users, item_ids):
-        im_idx = self.im_idx[item_ids]  # [batch_size, nb_mod]
-        i0_idx = self.i0_idx[item_ids]  # [batch_size, nb_mod]
-        in_idx = self.in_idx[item_ids] 
+    def get_regularizer(self,unique_users, unique_items):
+        im_idx = self.im_idx[unique_items]  # [batch_size, nb_mod]
+        i0_idx = self.i0_idx[unique_items]  # [batch_size, nb_mod]
+        in_idx = self.in_idx[unique_items] 
         return self.users_emb.weight[unique_users].norm().pow(2) + self.item_response_embeddings.weight[im_idx].norm().pow(
             2) + self.item_response_embeddings.weight[i0_idx].norm().pow(
             2)+ self.item_response_embeddings.weight[in_idx].norm().pow(
@@ -371,14 +369,14 @@ class IMPACTModel_low_mem(nn.Module):
 
         self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities), persistent=False)
 
-    def get_embeddings(self, user_ids, item_ids, concept_ids):
+    def get_embeddings(self, users_id, items_id, concepts_id):
         # User embeddings
-        u_emb = self.users_emb(user_ids)  # [batch_size, embedding_dim]
+        u_emb = self.users_emb(users_id)  # [batch_size, embedding_dim]
 
         # Compute item-response indices
-        im_idx = self.im_idx[item_ids]  # [batch_size, nb_mod]
-        i0_idx = self.i0_idx[item_ids]  # [batch_size, nb_mod]
-        in_idx = self.in_idx[item_ids]  # [batch_size, nb_mod]
+        im_idx = self.im_idx[items_id]  # [batch_size, nb_mod]
+        i0_idx = self.i0_idx[items_id]  # [batch_size, nb_mod]
+        in_idx = self.in_idx[items_id]  # [batch_size, nb_mod]
 
         # Item-Response embeddings
         im_emb_prime = self.item_response_embeddings(im_idx)  # [batch_size, nb_mod, embedding_dim]
@@ -386,7 +384,7 @@ class IMPACTModel_low_mem(nn.Module):
         in_emb_prime = self.item_response_embeddings(in_idx)
 
         # Compute negative squared Euclidean distances (p_uir)
-        W_t = self.W[concept_ids]
+        W_t = self.W[concepts_id]
 
         return u_emb, im_emb_prime, i0_emb_prime, in_emb_prime, W_t
 
@@ -394,23 +392,23 @@ class IMPACTModel_low_mem(nn.Module):
         return self.users_emb.weight.norm().pow(2) + self.item_response_embeddings.weight.norm().pow(
             2) + self.W.data.norm().pow(2)
 
-    def forward(self, user_ids, item_ids, concept_ids):
+    def forward(self, users_id, items_id, concepts_id):
         # W
-        W_t = self.W[concept_ids]
+        W_t = self.W[concepts_id]
 
         # I
-        im_idx = self.im_idx[item_ids]
+        im_idx = self.im_idx[items_id]
         im_emb_prime = self.item_response_embeddings(im_idx)
         im_emb = torch.bmm(im_emb_prime, W_t)
 
         # E
-        u_emb = self.users_emb(user_ids)
+        u_emb = self.users_emb(users_id)
 
         # p_uim
         diff = u_emb.unsqueeze(1) - im_emb
         p_uim = torch.sum(diff ** 2, dim=2)
 
-        return mod_to_resp(torch.argmin(p_uim + self.mask[item_ids, :], dim=1), self.nb_modalities[item_ids])
+        return mod_to_resp(torch.argmin(p_uim + self.mask[items_id, :], dim=1), self.nb_modalities[items_id])
 
 class IMPACT(AbstractModel):
 
@@ -453,14 +451,14 @@ class IMPACT(AbstractModel):
         nb_modalities_list = []
 
         for data_batch in valid_dataloader:
-            user_ids = data_batch[:, 0].long()
-            item_ids = data_batch[:, 1].long()
-            nb_modalities = valid_dataloader.dataset.nb_modalities[item_ids]
+            users_id = data_batch[:, 0].long()
+            items_id = data_batch[:, 1].long()
+            nb_modalities = valid_dataloader.dataset.nb_modalities[items_id]
             labels = data_batch[:, 2]
-            concept_ids = data_batch[:, 3].long()
+            concepts_id = data_batch[:, 3].long()
 
-            preds = self.model(user_ids, item_ids, concept_ids)
-            total_loss = self._compute_loss(user_ids, item_ids, concept_ids, labels)
+            preds = self.model(users_id, items_id, concepts_id)
+            total_loss = self._compute_loss(users_id, items_id, concepts_id, labels)
             loss_list.append(total_loss.detach())
             nb_modalities_list.append(nb_modalities)
             pred_list.append(preds)
