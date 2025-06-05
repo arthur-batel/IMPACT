@@ -625,13 +625,12 @@ def custom_loss(u_emb: torch.Tensor,
     L2 = torch.where(diff_mask2 == 1, F.softplus(diffs3 - diffs2), torch.zeros_like(diff_mask2)).mean(dim=1).mean()
 
     ##### L3
-    R_t = R[users_id][:, items_id].t()
-    b = (R[users_id, items_id].unsqueeze(1) - R_t)
+    R_t = R[users_id][:, items_id].t() # responses to compare
+    b = (R[users_id, items_id].unsqueeze(1) - R_t) # batch responses
 
     b_diag = b.abs()
 
-    v_mask = concepts_id.unsqueeze(0).eq(concepts_id.unsqueeze(1))  # same concept checking
-    u_mask = v_mask & (b_diag > 0.0) & (R_t >= 1.0)   # b_diag > 0 : not exactly similar responses for which we cannot say anything; R_t >= 1.0 : comparison with not null responses only
+    u_mask = (b_diag > 0.0) & (R_t >= 1.0)   # b_diag > 0 : not exactly similar responses for which we cannot say anything; R_t >= 1.0 : comparison with not null responses only
 
     indices = torch.nonzero(u_mask)
     u_base_idx = indices[:, 0]
