@@ -114,6 +114,7 @@ class AbstractModel(ABC):
             'pc-er': compute_pc_er,
             'doa': compute_doa,
             'rm': compute_rm,
+            'meta_doa': lambda x, y: -1,
         }
         assert set(self.profile_metrics).issubset(self.profile_metric_functions.keys())
 
