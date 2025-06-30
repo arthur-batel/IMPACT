@@ -35,7 +35,6 @@ class AbstractModel(ABC):
         self.model = None
         self.state = None
         self._trained = False
-        self.fold = config['i_fold']
 
         # # Save/Load model params setup
         # if self.config['save_params']:
@@ -181,7 +180,6 @@ class AbstractModel(ABC):
             self._save_user_emb()
             self._save_model_params(temporary=False)
             logging.info("Params saved")
-        self.fold += 1
 
     def precompute_user_average_resp(self, dataloader, device):
         U_resp_sum = torch.zeros(size=(self.model.user_n, self.model.concept_n)).to(device, non_blocking=True)
@@ -200,9 +198,6 @@ class AbstractModel(ABC):
                 U_resp_nb[user_ids, dim_ids] += torch.ones_like(labels)
 
             return U_resp_sum / U_resp_nb
-
-    def _esc(self, valid_loader, valid_data, ep, scheduler):  # Early Stopping Criterion
-        pass
 
     def _train_early_stopping_loss(self, train_loader, valid_loader, valid_data, optimizer, scheduler, scaler):
         epochs = self.config['num_epochs']
@@ -572,20 +567,10 @@ class AbstractModel(ABC):
                 scaler.step(optimizer)
                 scaler.update()
 
-    def _setup_params_paths(self):
-        params_path = f"{self.config['params_path']}_{self.name}_fold_{self.fold}_seed_{self.config['seed']}.pth"
-        emb_path = f"{self.config['embs_path']}_{self.name}_fold_{self.fold}_seed_{self.config['seed']}.csv"
-
-        # if os.path.isfile(params_path) or os.path.isfile(emb_path):
-        #     self._ask_saving_pref()
-        # else:
-        #     logging.info(params_path)
-        #     logging.info(emb_path)
-
     def _tensorboard_saving(self, train_loss, valid_loss, valid_metric, ep):
         self.writer.add_scalars(f'{self.name}_{self.timestamp}_Loss',
-                                {f'Train_{self.fold}': train_loss, f'Valid_{self.fold}': valid_loss}, ep)
-        self.writer.add_scalars(f'{self.name}_{self.timestamp}_RMSE', {f'Valid_{self.fold}': valid_metric}, ep)
+                                {f'Train_{self.config["i_fold"]}': train_loss, f'Valid_{self.config["i_fold"]}': valid_loss}, ep)
+        self.writer.add_scalars(f'{self.name}_{self.timestamp}_RMSE', {f'Valid_{self.config["i_fold"]}': valid_metric}, ep)
 
     def _flush_tensorboard_saving(self, train_loss, valid_loss, valid_metric, valid_mae, ep):
         self.writer.add_scalars(f'DBPR_Loss',
@@ -599,11 +584,6 @@ class AbstractModel(ABC):
         if self.config['load_params']:
             self._load_model_params(temporary=False)
         self.state = "model_initialized"
-
-    def get_graph(self):
-        if self.state == "model_initialized":
-            dummy_input = torch.tensor([[0, 0, 0], [0, 1, 2]])
-            self.writer.add_graph(self.model, dummy_input)
 
     @property
     def name(self):
@@ -684,25 +664,20 @@ class AbstractModel(ABC):
         return loss_tensor, pred_tensor, label_tensor, nb_modalities_tensor
 
     def _save_user_emb(self) -> None:
-        path = self.config['embs_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
+        path = self.config['embs_path'] + '_' + self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed']) + ".csv"
         pd.DataFrame(self.get_user_emb().cpu().numpy()).to_csv(path, index=None, header=None)
 
     def _save_model_params(self, temporary=True) -> None:
-        path = self.config['params_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
+        path = self.config['params_path'] + '_' + self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed'])
         if temporary:
             path += '_temp'
 
         torch.save(self.model.state_dict(), path + '.pth')
 
-    def _delete_temp_model_params(self) -> None:
-        path = self.config['params_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
-            self.config['seed']) + '_temp.pth'
-        os.remove(path)
-
     def _load_model_params(self, temporary=True) -> None:
-        path = self.config['params_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
+        path = self.config['params_path'] + '_' + self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed'])
         if temporary:
             path += '_temp'
