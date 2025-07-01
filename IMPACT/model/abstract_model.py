@@ -664,12 +664,12 @@ class AbstractModel(ABC):
         return loss_tensor, pred_tensor, label_tensor, nb_modalities_tensor
 
     def _save_user_emb(self) -> None:
-        path = self.config['embs_path'] + '_' + self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
+        path = self.config['embs_path'] + self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed']) + ".csv"
         pd.DataFrame(self.get_user_emb().cpu().numpy()).to_csv(path, index=None, header=None)
 
     def _save_model_params(self, temporary=True) -> None:
-        path = self.config['params_path'] + '_' + self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
+        path = self.config['params_path'] +  self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed'])
         if temporary:
             path += '_temp'
@@ -677,7 +677,7 @@ class AbstractModel(ABC):
         torch.save(self.model.state_dict(), path + '.pth')
 
     def _load_model_params(self, temporary=True) -> None:
-        path = self.config['params_path'] + '_' + self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
+        path = self.config['params_path'] +  self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed'])
         if temporary:
             path += '_temp'
