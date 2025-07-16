@@ -744,6 +744,9 @@ class AbstractModel(ABC):
         if not self._trained:
             warnings.warn("The model must be trained before getting user embeddings")
         return None
+    
+    def get_user_params(self):
+        return self.get_user_emb()
 
     def evaluate_valid(self, valid_dataloader: data.DataLoader, log_tensor):
         loss_tensor, pred_tensor, label_tensor, nb_modalities = self._evaluate_preds(valid_dataloader)

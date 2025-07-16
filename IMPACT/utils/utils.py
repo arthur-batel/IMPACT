@@ -39,7 +39,7 @@ def setuplogger(verbose: bool = True, log_path: str = "../../experiments/logs/",
 
     if log_name is not None:
         now = datetime.now()
-        time_str = now.strftime("_%d:%m:%y_%S:%M")
+        time_str = now.strftime("_%d:%m:%y_%H:%M:%S")
         file_handler = logging.FileHandler(log_path + log_name + time_str + ".log")
 
         if verbose:
