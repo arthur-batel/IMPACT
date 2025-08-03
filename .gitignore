@@ -9,3 +9,5 @@ experiment/datasets/data_utils/__pycache__/
 build/
 dist/
 *.egg-info/
+.*png
+*-checkpoint.py

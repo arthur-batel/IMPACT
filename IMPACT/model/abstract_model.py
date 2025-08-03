@@ -24,7 +24,6 @@ import tkinter as tk
 
 from IMPACT.utils import utils
 
-
 class AbstractModel(ABC):
     def __init__(self, name: str = None, **config):
         super().__init__()
@@ -36,7 +35,6 @@ class AbstractModel(ABC):
         self.model = None
         self.state = None
         self._trained = False
-        self.fold = config['i_fold']
 
         # # Save/Load model params setup
         # if self.config['save_params']:
@@ -102,8 +100,11 @@ class AbstractModel(ABC):
             'mi_acc': micro_ave_accuracy,
             'mi_prec': micro_ave_precision,
             'mi_rec': micro_ave_recall,
-            'mi_f1': micro_ave_f1,
+            'mi_f_b': micro_f_beta,
             'mi_auc': micro_ave_auc,
+            'ma_prec': macro_precision,
+            'ma_rec': macro_recall,
+            'ma_f_b': macro_f_beta,
         }
         assert set(self.pred_metrics).issubset(self.pred_metric_functions.keys())
 
@@ -112,6 +113,7 @@ class AbstractModel(ABC):
             'pc-er': compute_pc_er,
             'doa': compute_doa,
             'rm': compute_rm,
+            'meta_doa': lambda x, y: -1,
         }
         assert set(self.profile_metrics).issubset(self.profile_metric_functions.keys())
 
@@ -149,14 +151,14 @@ class AbstractModel(ABC):
 
         self.best_model_params = self.model.state_dict()
 
-        train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, pin_memory=False)
+        train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, pin_memory=self.config['pin_memory'], num_workers=self.config['num_workers'])
         # Choosing an appropriate batch_size for the validation data
         valid_batch_size = 20000
         if len(valid_data) < valid_batch_size:
             valid_batch_size = len(valid_data)
         elif abs(len(valid_data) - valid_batch_size) < 500:
             valid_batch_size = len(valid_data) // 2 + 1
-        valid_loader = data.DataLoader(valid_data, batch_size=valid_batch_size, shuffle=False, pin_memory=False)
+        valid_loader = data.DataLoader(valid_data, batch_size=valid_batch_size, shuffle=False, pin_memory=self.config['pin_memory'], num_workers=self.config['num_workers'])
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
@@ -178,7 +180,6 @@ class AbstractModel(ABC):
             self._save_user_emb()
             self._save_model_params(temporary=False)
             logging.info("Params saved")
-        self.fold += 1
 
     def precompute_user_average_resp(self, dataloader, device):
         U_resp_sum = torch.zeros(size=(self.model.user_n, self.model.concept_n)).to(device, non_blocking=True)
@@ -186,7 +187,7 @@ class AbstractModel(ABC):
 
         self.model.eval()
         with torch.no_grad(), torch.amp.autocast(str(device)):
-            data_loader = data.DataLoader(dataloader, batch_size=1, shuffle=False)
+            data_loader = data.DataLoader(dataloader, batch_size=1, shuffle=False, pin_memory=self.config['pin_memory'], num_workers=self.config['num_workers'])
             for data_batch in data_loader:
                 user_ids = data_batch[:, 0].long()
                 item_ids = data_batch[:, 1].long()
@@ -197,9 +198,6 @@ class AbstractModel(ABC):
                 U_resp_nb[user_ids, dim_ids] += torch.ones_like(labels)
 
             return U_resp_sum / U_resp_nb
-
-    def _esc(self, valid_loader, valid_data, ep, scheduler):  # Early Stopping Criterion
-        pass
 
     def _train_early_stopping_loss(self, train_loader, valid_loader, valid_data, optimizer, scheduler, scaler):
         epochs = self.config['num_epochs']
@@ -569,20 +567,10 @@ class AbstractModel(ABC):
                 scaler.step(optimizer)
                 scaler.update()
 
-    def _setup_params_paths(self):
-        params_path = f"{self.config['params_path']}_{self.name}_fold_{self.fold}_seed_{self.config['seed']}.pth"
-        emb_path = f"{self.config['embs_path']}_{self.name}_fold_{self.fold}_seed_{self.config['seed']}.csv"
-
-        # if os.path.isfile(params_path) or os.path.isfile(emb_path):
-        #     self._ask_saving_pref()
-        # else:
-        #     logging.info(params_path)
-        #     logging.info(emb_path)
-
     def _tensorboard_saving(self, train_loss, valid_loss, valid_metric, ep):
         self.writer.add_scalars(f'{self.name}_{self.timestamp}_Loss',
-                                {f'Train_{self.fold}': train_loss, f'Valid_{self.fold}': valid_loss}, ep)
-        self.writer.add_scalars(f'{self.name}_{self.timestamp}_RMSE', {f'Valid_{self.fold}': valid_metric}, ep)
+                                {f'Train_{self.config["i_fold"]}': train_loss, f'Valid_{self.config["i_fold"]}': valid_loss}, ep)
+        self.writer.add_scalars(f'{self.name}_{self.timestamp}_RMSE', {f'Valid_{self.config["i_fold"]}': valid_metric}, ep)
 
     def _flush_tensorboard_saving(self, train_loss, valid_loss, valid_metric, valid_mae, ep):
         self.writer.add_scalars(f'DBPR_Loss',
@@ -596,11 +584,6 @@ class AbstractModel(ABC):
         if self.config['load_params']:
             self._load_model_params(temporary=False)
         self.state = "model_initialized"
-
-    def get_graph(self):
-        if self.state == "model_initialized":
-            dummy_input = torch.tensor([[0, 0, 0], [0, 1, 2]])
-            self.writer.add_graph(self.model, dummy_input)
 
     @property
     def name(self):
@@ -655,10 +638,12 @@ class AbstractModel(ABC):
         loss_list = []
         pred_list = []
         label_list = []
+        nb_modalities_list = []
 
         for data_batch in data_loader:
             user_ids = data_batch[:, 0].long()
             item_ids = data_batch[:, 1].long()
+            nb_modalities = data_loader.dataset.nb_modalities[item_ids]
             labels = data_batch[:, 2]
             dim_ids = data_batch[:, 3].long()
 
@@ -668,34 +653,31 @@ class AbstractModel(ABC):
             loss_list.append(loss)
             pred_list.append(preds.detach())
             label_list.append(labels.detach())
+            nb_modalities_list.append(nb_modalities.detach())
 
         # Concatenate lists into tensors
         loss_tensor = torch.stack(loss_list)  # Assumes each loss is a scalar tensor
         pred_tensor = torch.cat(pred_list, dim=0)
         label_tensor = torch.cat(label_list, dim=0)
+        nb_modalities_tensor = torch.cat(nb_modalities_list, dim=0)
 
-        return loss_tensor, pred_tensor, label_tensor
+        return loss_tensor, pred_tensor, label_tensor, nb_modalities_tensor
 
     def _save_user_emb(self) -> None:
-        path = self.config['embs_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
+        path = self.config['embs_path'] + self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed']) + ".csv"
         pd.DataFrame(self.get_user_emb().cpu().numpy()).to_csv(path, index=None, header=None)
 
     def _save_model_params(self, temporary=True) -> None:
-        path = self.config['params_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
+        path = self.config['params_path'] +  self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed'])
         if temporary:
             path += '_temp'
 
         torch.save(self.model.state_dict(), path + '.pth')
 
-    def _delete_temp_model_params(self) -> None:
-        path = self.config['params_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
-            self.config['seed']) + '_temp.pth'
-        os.remove(path)
-
     def _load_model_params(self, temporary=True) -> None:
-        path = self.config['params_path'] + '_' + self.name + '_fold_' + str(self.fold) + '_seed_' + str(
+        path = self.config['params_path'] +  self.config['dataset_name']+'_'+ self.name + '_fold_' + str(self.config['i_fold']) + '_seed_' + str(
             self.config['seed'])
         if temporary:
             path += '_temp'
@@ -762,28 +744,32 @@ class AbstractModel(ABC):
         if not self._trained:
             warnings.warn("The model must be trained before getting user embeddings")
         return None
+    
+    def get_user_params(self):
+        return self.get_user_emb()
 
     def evaluate_valid(self, valid_dataloader: data.DataLoader, log_tensor):
-        loss_tensor, pred_tensor, label_tensor = self._evaluate_preds(valid_dataloader)
+        loss_tensor, pred_tensor, label_tensor, nb_modalities = self._evaluate_preds(valid_dataloader)
 
-        return torch.mean(loss_tensor), self.valid_metric(
-            pred_tensor, label_tensor)
+        return torch.mean(loss_tensor), self.valid_metric(pred_tensor, label_tensor,nb_modalities)
 
     def evaluate_predictions(self, test_dataset: data.DataLoader):
-        test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False)
-        loss_tensor, pred_tensor, label_tensor = self._evaluate_preds(test_dataloader)
+        test_dataloader = data.DataLoader(test_dataset, batch_size=100000, shuffle=False, pin_memory=self.config['pin_memory'],num_workers=self.config['num_workers'])
+        loss_tensor, pred_tensor, label_tensor , nb_modalities_tensor = self._evaluate_preds(test_dataloader)
         # Convert tensors to double if needed
         pred_tensor = pred_tensor.double()
         label_tensor = label_tensor.double()
+        nb_modalities_tensor = nb_modalities_tensor.long()
 
         # Compute metrics in one pass using a dictionary comprehension
-        results = {metric: self.pred_metric_functions[metric](pred_tensor, label_tensor).cpu().item()
+        results = {metric: self.pred_metric_functions[metric](pred_tensor, label_tensor, nb_modalities_tensor).cpu().item()
                    for metric in self.pred_metrics}
 
         # Optionally keep the predictions and labels as tensors to avoid conversion overhead
         results.update({
             'preds': pred_tensor,
-            'labels': label_tensor
+            'labels': label_tensor,
+            'nb_modalities': nb_modalities_tensor
         })
 
         return results
@@ -804,7 +790,7 @@ def compute_pc_er(emb, test_data):
     U_resp_nb = torch.zeros(size=(test_data.n_users, test_data.n_categories)).to(test_data.raw_data_array.device,
                                                                                  non_blocking=True)
 
-    data_loader = data.DataLoader(test_data, batch_size=1, shuffle=False)
+    data_loader = data.DataLoader(test_data, batch_size=1, shuffle=False, num_workers=0)
     for data_batch in data_loader:
         user_ids = data_batch[:, 0].long()
         item_ids = data_batch[:, 1].long()
@@ -860,7 +846,7 @@ def compute_doa(emb:torch.Tensor, test_data):
                                       test_data.concept_map))
 
 @torch.jit.script
-def root_mean_squared_error(y_true, y_pred):
+def root_mean_squared_error(y_true, y_pred, nb_modalities):
     """
     Compute the rmse metric (Regression)
 
@@ -875,7 +861,7 @@ def root_mean_squared_error(y_true, y_pred):
 
 
 @torch.jit.script
-def mean_absolute_error(y_true, y_pred):
+def mean_absolute_error(y_true, y_pred, nb_modalities):
     """
     Compute the mae metric (Regression)
 
@@ -890,7 +876,7 @@ def mean_absolute_error(y_true, y_pred):
 
 
 @torch.jit.script
-def r2(gt, pd):
+def r2(gt, pd, nb_modalities):
     """
     Compute the r2 metric (Regression)
 
@@ -910,9 +896,14 @@ def r2(gt, pd):
 
     return r2
 
+@torch.jit.script
+def round_pred(y_true, y_pred, nb_modalities):
+    y_true = torch.round(y_true * (nb_modalities - 1))
+    y_pred = torch.round(y_pred * (nb_modalities - 1))
+    return y_true, y_pred
 
 @torch.jit.script
-def micro_ave_accuracy(y_true, y_pred):
+def micro_ave_accuracy(y_true, y_pred, nb_modalities):
     """
     Compute the micro-averaged accuracy (Classification)
 
@@ -923,28 +914,13 @@ def micro_ave_accuracy(y_true, y_pred):
     Returns:
         Tensor: The micro-averaged precision.
     """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
     return torch.mean((y_true == y_pred).float())
 
 
 @torch.jit.script
-def micro_ave_precision(y_true, y_pred):
-    """
-    Compute the micro-averaged precision (Binary classification)
-
-    Args:
-        y_true (Tensor): Ground truth labels.
-        y_pred (Tensor): Predicted labels.
-
-    Returns:
-        Tensor: The micro-averaged precision.
-    """
-    true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
-    predicted_positives = torch.sum(y_pred == 2).float()
-    return true_positives / predicted_positives
-
-
-@torch.jit.script
-def micro_ave_recall(y_true, y_pred):
+def micro_ave_recall(y_true, y_pred, nb_modalities):
     """
     Compute the micro-averaged recall (Binary classification)
 
@@ -955,29 +931,17 @@ def micro_ave_recall(y_true, y_pred):
     Returns:
         Tensor: The micro-averaged recall.
     """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
     true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
     actual_positives = torch.sum(y_true == 2).float()
-    return true_positives / actual_positives
+    if actual_positives > 0:
+        return true_positives / actual_positives
+    else:
+        return torch.tensor(0)
 
 
-@torch.jit.script
-def micro_ave_f1(y_true, y_pred):
-    """
-    Compute the micro-averaged f1 (Binary classification)
-
-    Args:
-        y_true (Tensor): Ground truth labels.
-        y_pred (Tensor): Predicted labels.
-
-    Returns:
-        Tensor: The micro-averaged f1.
-    """
-    precision = micro_ave_precision(y_true, y_pred)
-    recall = micro_ave_recall(y_true, y_pred)
-    return 2 * (precision * recall) / (precision + recall)
-
-
-def micro_ave_auc(y_true, y_pred):
+def micro_ave_auc(y_true, y_pred, nb_modalities):
     """
     Compute the micro-averaged roc-auc (Binary classification)
 
@@ -992,3 +956,84 @@ def micro_ave_auc(y_true, y_pred):
     y_pred = y_pred.cpu().int().numpy()
     roc_auc = roc_auc_score(y_true.ravel(), y_pred.ravel(), average='micro')
     return torch.tensor(roc_auc)
+
+
+
+@torch.jit.script
+def micro_ave_precision(y_true, y_pred, nb_modalities):
+    """
+    Compute the micro-averaged precision (Binary classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    true_positives = torch.sum((y_true == 2) & (y_pred == 2)).float()
+    predicted_positives = torch.sum(y_pred == 2).float()
+    if predicted_positives > 0:
+        return true_positives / predicted_positives
+    else:
+        return torch.tensor(0)
+
+
+def macro_precision(y_true, y_pred, nb_modalities):
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    classes = torch.arange(nb_modalities.max)+1
+    precision_tensor = torch.zeros(len(classes))
+
+    for i,cls in enumerate(classes):
+        true_positives = torch.sum((y_true == cls) & (y_pred == cls)).float()
+        predicted_positives = torch.sum(y_pred == cls).float()
+        if predicted_positives > 0:
+            precision_tensor[i] = true_positives / predicted_positives
+
+    return precision_tensor.mean()
+
+def macro_recall(y_true, y_pred, nb_modalities):
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    classes = torch.arange(nb_modalities.max())+1
+    recall_tensor = torch.zeros(len(classes))
+    for i,cls in enumerate(classes):
+        true_positives = torch.sum((y_true == cls) & (y_pred == cls)).float()
+        actual_positives = torch.sum(y_true == cls).float()
+        if actual_positives > 0:
+            recall_tensor[i] = true_positives / actual_positives
+    print('actual_tensor : '+str(recall_tensor))
+    return recall_tensor.mean()
+
+
+
+
+def macro_f_beta(y_true, y_pred, nb_modalities, beta:float=1):
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+    beta_squared = beta * beta
+    classes = torch.arange(nb_modalities.max())+1
+    f_beta_tensor = torch.zeros(len(classes))
+    for i, cls in enumerate(classes):
+        true_positives = torch.sum((y_true == cls) & (y_pred == cls)).float()
+        predicted_positives = torch.sum(y_pred == cls).float()
+        actual_positives = torch.sum(y_true == cls).float()
+        precision = true_positives / predicted_positives
+        recall = true_positives / actual_positives
+        if predicted_positives > 0 and actual_positives > 0:
+            f_beta_tensor[i] = (1 + beta_squared) * (precision * recall) / (precision + recall)
+
+    print('tensor : ' f'{f_beta_tensor}')
+    return f_beta_tensor.mean()
+
+
+def micro_f_beta(y_true, y_pred, nb_modalities, beta:float=1):
+    beta_squared = beta * beta
+    precision = micro_ave_precision(y_true, y_pred, nb_modalities)
+    recall = micro_ave_recall(y_true, y_pred, nb_modalities)
+    return (1 + beta_squared) * (precision * recall) / (precision + recall)
+
+
+
