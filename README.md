@@ -90,7 +90,3 @@ Céline Robardet,
 celine.robardet@insa-lyon.fr,
 INSA Lyon, LIRIS UMR 5205 FR 
 
-## Contributor
-
-Lucas Michaëli
-
