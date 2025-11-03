@@ -502,7 +502,7 @@ class IMPACT(AbstractModel):
         weights = self.L_W.compute_weights(losses)
 
         # Compute total loss
-        total_loss = torch.dot(weights, losses) + beta * L2 + lambda_param * R
+        total_loss = (1.5-beta) * torch.dot(weights, losses) + beta * L2 + lambda_param * R
 
         return total_loss
 
