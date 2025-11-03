@@ -98,6 +98,8 @@ class AbstractModel(ABC):
             'mae': mean_absolute_error,
             'r2': r2,
             'mi_acc': micro_ave_accuracy,
+            'mi_acc_w1':micro_ave_accuracy_w_1,
+            'mi_acc_w2':micro_ave_accuracy_w_2,
             'mi_prec': micro_ave_precision,
             'mi_rec': micro_ave_recall,
             'mi_f_b': micro_f_beta,
@@ -918,6 +920,49 @@ def micro_ave_accuracy(y_true, y_pred, nb_modalities):
 
     return torch.mean((y_true == y_pred).float())
 
+@torch.jit.script
+def micro_ave_accuracy_w_1(y_true, y_pred, nb_modalities):
+    """
+    Compute the micro-averaged accuracy within 1 (Ordinal classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    # Compute |prediction - truth|
+    diff = torch.abs(y_true - y_pred)
+
+    # True if <= 1 class apart
+    correct = (diff <= 1).float()
+
+    return torch.mean(correct)
+
+@torch.jit.script
+def micro_ave_accuracy_w_2(y_true, y_pred, nb_modalities):
+    """
+    Compute the micro-averaged accuracy within 2 (Ordinal classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    # Compute |prediction - truth|
+    diff = torch.abs(y_true - y_pred)
+
+    # True if <= 1 class apart
+    correct = (diff <= 2).float()
+
+    return torch.mean(correct)
 
 @torch.jit.script
 def micro_ave_recall(y_true, y_pred, nb_modalities):
