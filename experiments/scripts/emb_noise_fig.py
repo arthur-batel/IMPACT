@@ -125,6 +125,8 @@ def parse_args():
     )
     parser.add_argument('dataset', help="the dataset name")
     parser.add_argument('num_response', type=int)
+    parser.add_argument('--i_fold', type=int)
+    parser.add_argument('--seed', type=int)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -151,8 +153,8 @@ if __name__ == '__main__':
     
     # --- config ---
     noise_steps = 10
-    seeds_nb    = 3
-    folds_nb    = 5
+    seed = int(args.seed)
+    i_fold = int(args.i_fold)
     dataset_name=args.dataset
     num_responses=int(args.num_response)
     
@@ -161,100 +163,57 @@ if __name__ == '__main__':
     n_dims = None
     ratios_rmse = None
     ratios_mae  = None
+    rmse = None
+    mae = None
     
-    for i_fold in range(folds_nb):
-        for seed in range(seeds_nb):
+    config = utils.generate_eval_config(
+        i_fold=i_fold,
+        seed=seed,
+        save_params=False,
+        dataset_name=dataset_name,
+        learning_rate=0.02026,
+        lambda_=1.2e-5,
+        batch_size=2048,
+        num_epochs=2,
+        valid_metric='rmse',
+        pred_metrics=['rmse', 'mae'],
+        load_params=True
+    )
+    config['num_responses'] = num_responses
     
-            config = utils.generate_eval_config(
-                i_fold=i_fold,
-                seed=seed,
-                save_params=False,
-                dataset_name=dataset_name,
-                learning_rate=0.02026,
-                lambda_=1.2e-5,
-                batch_size=2048,
-                num_epochs=2,
-                valid_metric='rmse',
-                pred_metrics=['rmse', 'mae'],
-                load_params=True
-            )
-            config['num_responses'] = num_responses
-            
-            train_data, valid_data, test_data = utils.prepare_dataset(config, i_fold=i_fold)
-    
-            # initialize dim count and storage once
-            if ratios_rmse is None:
-                n_dims = train_data.n_categories
-                ratios_rmse = np.full((folds_nb, seeds_nb, n_dims, noise_steps), np.nan, dtype=float)
-                ratios_mae  = np.full((folds_nb, seeds_nb, n_dims, noise_steps), np.nan, dtype=float)
-    
-            algo = model.IMPACT(**config)
-            algo.init_model(train_data, valid_data)
-    
-            # Evaluate each dimension
-            for dim in range(n_dims):
-                for n in range(noise_steps):
-                    noise_level = n / noise_steps
-                    r_dim, r_other = evaluate_emb_qual(algo, test_data, dim, noise_level)
-    
-                    rmse_dim   = r_dim.get('rmse', None)
-                    rmse_other = r_other.get('rmse', None)
-                    mae_dim    = r_dim.get('mae', None)
-                    mae_other  = r_other.get('mae', None)
-    
-                    # RMSE ratio
-                    if (rmse_dim is not None) and (rmse_other not in [None, 0]):
-                        ratios_rmse[i_fold, seed, dim, n] = rmse_dim / rmse_other
-    
-                    # MAE ratio
-                    if (mae_dim is not None) and (mae_other not in [None, 0]):
-                        ratios_mae[i_fold, seed, dim, n] = mae_dim / mae_other
-    
-    
-    # ---- mean/std across seeds & folds ----
-    rmse_mean = np.nanmean(ratios_rmse, axis=(0,1))  # shape (dim, noise)
-    rmse_std  = np.nanstd(ratios_rmse, axis=(0,1))
-    
-    mae_mean  = np.nanmean(ratios_mae, axis=(0,1))
-    mae_std   = np.nanstd(ratios_mae,  axis=(0,1))
-    
-    # ---- normalize each dim curve by noise=0 baseline ----
-    rmse_baseline = rmse_mean[:, 0:1]
-    mae_baseline  = mae_mean[:,  0:1]
-    
-    rmse_mean_norm = rmse_mean / rmse_baseline
-    rmse_std_norm  = rmse_std  / rmse_baseline
-    
-    mae_mean_norm = mae_mean / mae_baseline
-    mae_std_norm  = mae_std  / mae_baseline
-    
-    # ---- plot RMSE ----
-    fig, ax = plt.subplots()
-    ax.set_xlabel("Noise level")
-    ax.set_ylabel("Normalized RMSE ratio (dim / other dims)")
-    
-    for dim in range(n_dims):
-        ax.plot(x, rmse_mean_norm[dim], label=f"dim {dim}")
-        ax.fill_between(x,
-                        rmse_mean_norm[dim] - rmse_std_norm[dim],
-                        rmse_mean_norm[dim] + rmse_std_norm[dim],
-                        alpha=0.15)
-    
-    plt.savefig(f"../../figs/rmse_corr_{dataset_name}.pdf")
-    plt.show()
-    # ---- plot MAE ----
-    fig, ax = plt.subplots()
-    ax.set_xlabel("Noise level")
-    ax.set_ylabel("Normalized MAE ratio (dim / other dims)")
-    
-    for dim in range(n_dims):
-        ax.plot(x, mae_mean_norm[dim], label=f"dim {dim}")
-        ax.fill_between(x,
-                        mae_mean_norm[dim] - mae_std_norm[dim],
-                        mae_mean_norm[dim] + mae_std_norm[dim],
-                        alpha=0.15)
-    
-    
-    plt.savefig(f"../../figs/mae_corr_{dataset_name}.pdf")
-    plt.show()
+    train_data, valid_data, test_data = utils.prepare_dataset(config, i_fold=i_fold)
 
+    # initialize dim count and storage once
+    if ratios_rmse is None:
+        n_dims = train_data.n_categories
+        ratios_rmse = np.full((n_dims, noise_steps), np.nan, dtype=float)
+        ratios_mae  = np.full((n_dims, noise_steps), np.nan, dtype=float)
+        moving_mae = np.full((n_dims, noise_steps), np.nan, dtype=float)
+
+    algo = model.IMPACT(**config)
+    algo.init_model(train_data, valid_data)
+
+    # Evaluate each dimension
+    for dim in range(n_dims):
+        for n in range(noise_steps):
+            noise_level = n / noise_steps
+            r_dim, r_other = evaluate_emb_qual(algo, test_data, dim, noise_level)
+
+            rmse_dim   = r_dim.get('rmse', None)
+            rmse_other = r_other.get('rmse', None)
+            mae_dim    = r_dim.get('mae', None)
+            mae_other  = r_other.get('mae', None)
+
+            # RMSE ratio
+            if (rmse_dim is not None) and (rmse_other not in [None, 0]):
+                ratios_rmse[dim, n] = rmse_dim / rmse_other
+
+            # MAE ratio
+            if (mae_dim is not None) and (mae_other not in [None, 0]):
+                ratios_mae[dim, n] = mae_dim / mae_other
+
+            if (mae_dim not in [None, 0]):
+                moving_mae[dim,n] = mae_dim
+
+    print("MAE dim", moving_mae)
+    print("MAE ratio",ratios_mae)            
