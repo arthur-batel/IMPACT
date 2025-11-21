@@ -17,11 +17,11 @@ install_requires = [] if SKIP_DEPENDENCIES else [
 
 setup(
     name='lirisimpact',
-    version='2.0.25',
+    version='3.0.0',
     author='Arthur BATEL',
     author_email='arthur.batel@insa-lyon.fr',
     packages=find_packages(),
-    description="""IMPACT framework, an interpretable multi-target framework for multi-class outputs""",
+    description="""IMPACT framework, an interpretable multi-target framework for ordinal outputs""",
     long_description_content_type="text/markdown",
     long_description=open('README.md').read(),
     url='https://github.com/arthur-batel/IMPACT.git',
