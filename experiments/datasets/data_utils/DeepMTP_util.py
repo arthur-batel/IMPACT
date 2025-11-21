@@ -2,9 +2,7 @@ import pandas
 from DeepMTP.utils.utils import generate_config
 from sklearn.metrics import r2_score
 import torch
-from cornac.data import Reader
-from cornac.eval_methods import BaseMethod
-from cornac.metrics import MAE, RMSE, RatingMetric
+
 import numpy as np
 import logging
 import warnings
@@ -153,7 +151,7 @@ def test(dataset_name: str, config: dict):
     nb_modalities = torch.load(f'../datasets/{dataset_name}/nb_modalities.pkl', weights_only=True)
     metadata = json.load(open(f'../datasets/{dataset_name}/metadata.json', 'r'))
 
-    for i_fold in range(3,5):
+    for i_fold in range(5):
 
 
         train_quadruplets = pd.read_csv(
@@ -217,7 +215,7 @@ def test(dataset_name: str, config: dict):
             config['seed'] = seed
 
             config_DMTP = generate_config(num_epochs=config['num_epochs'], learning_rate=config['learning_rate'],
-                                          decay=config['lambda'], compute_mode=config['device'],
+                                          decay=config['lambda'], compute_mode="cuda:0",
                                           train_batchsize=config['batch_size'], val_batchsize=10000,
                                           patience=config['patience'],
                                           evaluate_train=True, evaluate_val=True, problem_mode="regression",

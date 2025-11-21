@@ -1,4 +1,3 @@
-from sklearn.metrics import r2_score
 import torch
 from cornac.data import Reader
 from cornac.eval_methods import BaseMethod
@@ -9,7 +8,7 @@ import warnings
 
 from tqdm import tqdm
 
-from IMPACT import utils
+from IMPACT.utils import preprocess_concept_map, set_seed,corr_coeff,evaluate_doa,compute_rm_fold
 from IMPACT import dataset
 import pandas as pd
 import json
@@ -208,6 +207,73 @@ def mean_absolute_error(y_true: torch.Tensor, y_pred: torch.Tensor):
     return torch.mean(torch.abs(y_true - y_pred))
 
 @torch.jit.script
+def round_pred(y_true, y_pred, nb_modalities):
+    y_true = torch.round(y_true * (nb_modalities - 1))
+    y_pred = torch.round(y_pred * (nb_modalities - 1))
+    return y_true, y_pred
+    
+@torch.jit.script
+def micro_ave_accuracy(y_true, y_pred, nb_modalities):
+    """
+    Compute the micro-averaged accuracy (Classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    return torch.mean((y_true == y_pred).float())
+
+@torch.jit.script
+def micro_ave_accuracy_w_1(y_true, y_pred, nb_modalities):
+    """
+    Compute the micro-averaged accuracy within 1 (Ordinal classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    # Compute |prediction - truth|
+    diff = torch.abs(y_true - y_pred)
+
+    # True if <= 1 class apart
+    correct = (diff <= 1).float()
+
+    return torch.mean(correct)
+
+@torch.jit.script
+def micro_ave_accuracy_w_2(y_true, y_pred, nb_modalities):
+    """
+    Compute the micro-averaged accuracy within 2 (Ordinal classification)
+
+    Args:
+        y_true (Tensor): Ground truth labels.
+        y_pred (Tensor): Predicted labels.
+
+    Returns:
+        Tensor: The micro-averaged precision.
+    """
+    y_true, y_pred = round_pred(y_true, y_pred, nb_modalities)
+
+    # Compute |prediction - truth|
+    diff = torch.abs(y_true - y_pred)
+
+    # True if <= 1 class apart
+    correct = (diff <= 2).float()
+
+    return torch.mean(correct)
+
+
+@torch.jit.script
 def resp_to_mod(responses: torch.Tensor, nb_modalities: torch.Tensor):
     responses = responses - 1  # -> [0,1]
     indexes = torch.round(responses * (nb_modalities - 1)).long()  # -> [0,nb_modalities-1]
@@ -231,7 +297,7 @@ def test(dataset_name: str, config: dict, generate_algo, find_emb):
     config['embs_path'] = '../embs/' + str(dataset_name)
     config['params_path'] = '../ckpt/' + str(dataset_name)
 
-    metrics = {"mae": [], "rmse": [], "r2": [], "pc-er": [], "doa": [], 'rm': [], 'rmse_round' : [], 'mae_round' : []}
+    metrics = {"mae": [], "rmse": [], "r2": [], "pc-er": [], "doa": [], 'rm': [], 'rmse_round' : [], 'mae_round' : [], 'own_rmse' : [], 'own_mae' : [],'mi_acc' : [], 'mi_acc_w1' : [], 'mi_acc_w2' : []}
 
     for i_fold in range(5):
 
@@ -272,7 +338,7 @@ def test(dataset_name: str, config: dict, generate_algo, find_emb):
         concept_map = {int(k): [int(x) for x in v] for k, v in concept_map.items()}
         nb_modalities = torch.load(f'../datasets/{dataset_name}/nb_modalities.pkl', weights_only=True)
         metadata = json.load(open(f'../datasets/{dataset_name}/metadata.json', 'r'))
-        concept_array, concept_lens = utils.preprocess_concept_map(concept_map)
+        concept_array, concept_lens = preprocess_concept_map(concept_map)
         d = pd.read_csv(f'../datasets/2-preprocessed_data/{dataset_name}_test_quadruples_vert_{i_fold}.csv',
                         encoding='utf-8').to_records(index=False, column_dtypes={'student_id': int, 'item_id': int,
                                                                                  "correct": float, "concept_id": int})
@@ -298,7 +364,7 @@ def test(dataset_name: str, config: dict, generate_algo, find_emb):
 
         for seed in range(3):
             # Set the seed
-            utils.set_seed(seed)
+            set_seed(seed)
             config['seed'] = seed
 
             algo = generate_algo(config,metadata)
@@ -328,28 +394,39 @@ def test(dataset_name: str, config: dict, generate_algo, find_emb):
 
             metrics["rmse_round"].append(root_mean_squared_error(torch.Tensor(r_values), preds).item())
             metrics["mae_round"].append(mean_absolute_error(torch.Tensor(r_values), preds).item())
+            metrics["own_rmse"].append(root_mean_squared_error(torch.Tensor(r_values), torch.Tensor(r_preds)).item())
+            metrics["own_mae"].append(mean_absolute_error(torch.Tensor(r_values), torch.Tensor(r_preds)).item())
+
+            metrics["mi_acc"].append(micro_ave_accuracy(torch.Tensor(r_values), torch.Tensor(r_preds), nb_modalities[i_indices]).item())
+            metrics["mi_acc_w1"].append(micro_ave_accuracy_w_1(torch.Tensor(r_values), torch.Tensor(r_preds), nb_modalities[i_indices]).item())
+            metrics["mi_acc_w2"].append(micro_ave_accuracy_w_2(torch.Tensor(r_values), torch.Tensor(r_preds), nb_modalities[i_indices]).item())
 
             emb =  find_emb(algo)
             emb = emb
 
-            metrics["pc-er"].append(utils.corr_coeff(emb, d, concept_array, concept_lens))
+            metrics["pc-er"].append(corr_coeff(emb, d, concept_array, concept_lens))
             metrics["doa"].append(
-                np.mean(utils.evaluate_doa(emb, train_dataloader.log_tensor.cpu().numpy(), metadata, concept_map)))
-            metrics["rm"].append(np.mean(utils.compute_rm_fold(emb, d, concept_array, concept_lens)))
+                np.mean(evaluate_doa(emb, train_dataloader.log_tensor.cpu().numpy(), metadata, concept_map)))
+            metrics["rm"].append(np.mean(compute_rm_fold(emb, d, concept_array, concept_lens)))
 
             pd.DataFrame(emb).to_csv(
                 "../embs/" + dataset_name + "_GCMC_cornac_Iter_fold" + str(i_fold) + "_seed_" + str(seed) + ".csv",
                 index=False, header=False)
 
     df = pd.DataFrame(metrics)
-    logging.info('rmse : {:.4f} +- {:.4f}'.format(df['rmse'].mean(), df['rmse'].std()))
-    logging.info('mae : {:.4f} +- {:.4f}'.format(df['mae'].mean(), df['mae'].std()))
-    logging.info('r2 : {:.4f} +- {:.4f}'.format(df['r2'].mean(), df['r2'].std()))
-    logging.info('pc-er : {:.4f} +- {:.4f}'.format(df['pc-er'].mean(), df['pc-er'].std()))
-    logging.info('doa : {:.4f} +- {:.4f}'.format(df['doa'].mean(), df['doa'].std()))
-    logging.info('rm : {:.4f} +- {:.4f}'.format(df['rm'].mean(), df['rm'].std()))
-    logging.info('rmse_round : {:.4f} +- {:.4f}'.format(df['rmse_round'].mean(), df['rmse_round'].std()))
-    logging.info('mae_round : {:.4f} +- {:.4f}'.format(df['mae_round'].mean(), df['mae_round'].std()))
+    print('rmse : {:.4f} +- {:.4f}'.format(df['rmse'].mean(), df['rmse'].std()))
+    print('mae : {:.4f} +- {:.4f}'.format(df['mae'].mean(), df['mae'].std()))
+    print('own_rmse : {:.4f} +- {:.4f}'.format(df['own_rmse'].mean(), df['own_rmse'].std()))
+    print('own_mae : {:.4f} +- {:.4f}'.format(df['own_mae'].mean(), df['own_mae'].std()))
+    print('acc : {:.4f} +- {:.4f}'.format(df['mi_acc'].mean(), df['mi_acc'].std()))
+    print('acc_n1 : {:.4f} +- {:.4f}'.format(df['mi_acc_w1'].mean(), df['mi_acc_w1'].std()))
+    print('acc_n2 : {:.4f} +- {:.4f}'.format(df['mi_acc_w2'].mean(), df['mi_acc_w2'].std()))
+    print('r2 : {:.4f} +- {:.4f}'.format(df['r2'].mean(), df['r2'].std()))
+    print('pc-er : {:.4f} +- {:.4f}'.format(df['pc-er'].mean(), df['pc-er'].std()))
+    print('doa : {:.4f} +- {:.4f}'.format(df['doa'].mean(), df['doa'].std()))
+    print('rm : {:.4f} +- {:.4f}'.format(df['rm'].mean(), df['rm'].std()))
+    print('rmse_round : {:.4f} +- {:.4f}'.format(df['rmse_round'].mean(), df['rmse_round'].std()))
+    print('mae_round : {:.4f} +- {:.4f}'.format(df['mae_round'].mean(), df['mae_round'].std()))
 
     return metrics
 
