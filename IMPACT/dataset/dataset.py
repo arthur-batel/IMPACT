@@ -3,12 +3,10 @@ from collections import defaultdict, deque
 
 import torch
 from torch.utils import data
-import numpy as np
-import pandas as pd
 
 class Dataset(object):
 
-    def __init__(self, data, concept_map, metadata):
+    def __init__(self, data, concept_map, metadata, nb_modalities):
         """
         Args:
             data: list, [(sid, qid, score)]
@@ -31,6 +29,8 @@ class Dataset(object):
         concepts_id = set(sum(concept_map.values(), []))
         self._concepts_id = {int(x) for x in concepts_id}
 
+        self._nb_modalities = nb_modalities.to(self._raw_data_array.device)
+
 
 
         assert max(self._users_id) < self.n_users, \
@@ -47,6 +47,13 @@ class Dataset(object):
         """
         return self._metadata
 
+    @property
+    def nb_modalities(self):
+        """
+        @return: Nb of modalities of the questions
+        """
+        return self._nb_modalities
+        
     @property
     def n_users(self):
         """
@@ -160,14 +167,14 @@ class Dataset(object):
 
 class LoaderDataset(Dataset, data.dataset.Dataset):
 
-    def __init__(self, data, concept_map, metadata):
+    def __init__(self, data, concept_map, metadata, nb_modalities):
         """
         Args:
             data: list, [(sid, qid, score)]
             concept_map: dict, concept map {qid: cid}
             metadata : dict of keys {"num_user_id", "num_item_id", "num_dimension_id"}, containing the total number of users, items and concepts
         """
-        super().__init__(data, concept_map, metadata)
+        super().__init__(data, concept_map, metadata, nb_modalities)
 
     def __getitem__(self, item):
         return self.raw_data_array[item]

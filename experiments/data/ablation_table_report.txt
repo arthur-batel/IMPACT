@@ -1,0 +1,166 @@
+Ablation table build report
+==============================
+Files seen: 160
+Files used: 20
+Unknown ablation files: 140
+  - launch_IMPACT_movielens_1364096-WI_0.out
+  - launch_IMPACT_movielens_1364096-WI_12.out
+  - launch_IMPACT_movielens_1364096-WI_3.out
+  - launch_IMPACT_movielens_1364096-WI_6.out
+  - launch_IMPACT_movielens_1364096-WI_9.out
+  - launch_IMPACT_movielens_1364203-WIR_0.out
+  - launch_IMPACT_movielens_1364203-WIR_1.out
+  - launch_IMPACT_movielens_1364203-WIR_2.out
+  - launch_IMPACT_movielens_1364203-WIR_3.out
+  - launch_IMPACT_movielens_1364203-WIR_4.out
+  - launch_IMPACT_movielens_1365016-WIL_0.out
+  - launch_IMPACT_movielens_1365016-WIL_1.out
+  - launch_IMPACT_movielens_1365016-WIL_2.out
+  - launch_IMPACT_movielens_1365016-WIL_3.out
+  - launch_IMPACT_movielens_1365016-WIL_4.out
+  - launch_IMPACT_movielens_1366317-WILR_0.out
+  - launch_IMPACT_movielens_1366317-WILR_1.out
+  - launch_IMPACT_movielens_1366317-WILR_2.out
+  - launch_IMPACT_movielens_1366317-WILR_3.out
+  - launch_IMPACT_movielens_1366317-WILR_4.out
+  - launch_IMPACT_movielens_1366421-WLR_0.out
+  - launch_IMPACT_movielens_1366421-WLR_1.out
+  - launch_IMPACT_movielens_1366421-WLR_2.out
+  - launch_IMPACT_movielens_1366421-WLR_3.out
+  - launch_IMPACT_movielens_1366421-WLR_4.out
+  - launch_IMPACT_movielens_1366932-WL_0.out
+  - launch_IMPACT_movielens_1366932-WL_1.out
+  - launch_IMPACT_movielens_1366932-WL_2.out
+  - launch_IMPACT_movielens_1366932-WL_3.out
+  - launch_IMPACT_movielens_1366932-WL_4.out
+  - launch_IMPACT_movielens_1367445-WR_0.out
+  - launch_IMPACT_movielens_1367445-WR_1.out
+  - launch_IMPACT_movielens_1367445-WR_2.out
+  - launch_IMPACT_movielens_1367445-WR_3.out
+  - launch_IMPACT_movielens_1367445-WR_4.out
+  - launch_IMPACT_portrait_1364140-WI_0.out
+  - launch_IMPACT_portrait_1364140-WI_12.out
+  - launch_IMPACT_portrait_1364140-WI_3.out
+  - launch_IMPACT_portrait_1364140-WI_6.out
+  - launch_IMPACT_portrait_1364140-WI_9.out
+  - launch_IMPACT_portrait_1364187-WIR_0.out
+  - launch_IMPACT_portrait_1364187-WIR_1.out
+  - launch_IMPACT_portrait_1364187-WIR_2.out
+  - launch_IMPACT_portrait_1364187-WIR_3.out
+  - launch_IMPACT_portrait_1364187-WIR_4.out
+  - launch_IMPACT_portrait_1365079-WIL_0.out
+  - launch_IMPACT_portrait_1365079-WIL_1.out
+  - launch_IMPACT_portrait_1365079-WIL_2.out
+  - launch_IMPACT_portrait_1365079-WIL_3.out
+  - launch_IMPACT_portrait_1365079-WIL_4.out
+  - launch_IMPACT_portrait_1366244-WILR_0.out
+  - launch_IMPACT_portrait_1366244-WILR_1.out
+  - launch_IMPACT_portrait_1366244-WILR_2.out
+  - launch_IMPACT_portrait_1366244-WILR_3.out
+  - launch_IMPACT_portrait_1366244-WILR_4.out
+  - launch_IMPACT_portrait_1366428-WLR_0.out
+  - launch_IMPACT_portrait_1366428-WLR_1.out
+  - launch_IMPACT_portrait_1366428-WLR_2.out
+  - launch_IMPACT_portrait_1366428-WLR_3.out
+  - launch_IMPACT_portrait_1366428-WLR_4.out
+  - launch_IMPACT_portrait_1367027-WL_0.out
+  - launch_IMPACT_portrait_1367027-WL_1.out
+  - launch_IMPACT_portrait_1367027-WL_2.out
+  - launch_IMPACT_portrait_1367027-WL_3.out
+  - launch_IMPACT_portrait_1367027-WL_4.out
+  - launch_IMPACT_portrait_1367492-WR_0.out
+  - launch_IMPACT_portrait_1367492-WR_1.out
+  - launch_IMPACT_portrait_1367492-WR_2.out
+  - launch_IMPACT_portrait_1367492-WR_3.out
+  - launch_IMPACT_portrait_1367492-WR_4.out
+  - launch_IMPACT_postcovid_1364052-WI_0.out
+  - launch_IMPACT_postcovid_1364052-WI_12.out
+  - launch_IMPACT_postcovid_1364052-WI_3.out
+  - launch_IMPACT_postcovid_1364052-WI_6.out
+  - launch_IMPACT_postcovid_1364052-WI_9.out
+  - launch_IMPACT_postcovid_1364196-WIR_0.out
+  - launch_IMPACT_postcovid_1364196-WIR_1.out
+  - launch_IMPACT_postcovid_1364196-WIR_2.out
+  - launch_IMPACT_postcovid_1364196-WIR_3.out
+  - launch_IMPACT_postcovid_1364196-WIR_4.out
+  - launch_IMPACT_postcovid_1364995-WIL_0.out
+  - launch_IMPACT_postcovid_1364995-WIL_1.out
+  - launch_IMPACT_postcovid_1364995-WIL_2.out
+  - launch_IMPACT_postcovid_1364995-WIL_3.out
+  - launch_IMPACT_postcovid_1364995-WIL_4.out
+  - launch_IMPACT_postcovid_1366303-WILR_0.out
+  - launch_IMPACT_postcovid_1366303-WILR_1.out
+  - launch_IMPACT_postcovid_1366303-WILR_2.out
+  - launch_IMPACT_postcovid_1366303-WILR_3.out
+  - launch_IMPACT_postcovid_1366303-WILR_4.out
+  - launch_IMPACT_postcovid_1366349-WLR_0.out
+  - launch_IMPACT_postcovid_1366349-WLR_1.out
+  - launch_IMPACT_postcovid_1366349-WLR_2.out
+  - launch_IMPACT_postcovid_1366349-WLR_3.out
+  - launch_IMPACT_postcovid_1366349-WLR_4.out
+  - launch_IMPACT_postcovid_1366728-WL_0.out
+  - launch_IMPACT_postcovid_1366728-WL_1.out
+  - launch_IMPACT_postcovid_1366728-WL_2.out
+  - launch_IMPACT_postcovid_1366728-WL_3.out
+  - launch_IMPACT_postcovid_1366728-WL_4.out
+  - launch_IMPACT_postcovid_1367340-WR_0.out
+  - launch_IMPACT_postcovid_1367340-WR_1.out
+  - launch_IMPACT_postcovid_1367340-WR_2.out
+  - launch_IMPACT_postcovid_1367340-WR_3.out
+  - launch_IMPACT_postcovid_1367340-WR_4.out
+  - launch_IMPACT_promis_1364114-WI_0.out
+  - launch_IMPACT_promis_1364114-WI_12.out
+  - launch_IMPACT_promis_1364114-WI_3.out
+  - launch_IMPACT_promis_1364114-WI_6.out
+  - launch_IMPACT_promis_1364114-WI_9.out
+  - launch_IMPACT_promis_1364211-WIR_0.out
+  - launch_IMPACT_promis_1364211-WIR_1.out
+  - launch_IMPACT_promis_1364211-WIR_2.out
+  - launch_IMPACT_promis_1364211-WIR_3.out
+  - launch_IMPACT_promis_1364211-WIR_4.out
+  - launch_IMPACT_promis_1365035-WIL_0.out
+  - launch_IMPACT_promis_1365035-WIL_1.out
+  - launch_IMPACT_promis_1365035-WIL_2.out
+  - launch_IMPACT_promis_1365035-WIL_3.out
+  - launch_IMPACT_promis_1365035-WIL_4.out
+  - launch_IMPACT_promis_1366298-WILR_0.out
+  - launch_IMPACT_promis_1366298-WILR_1.out
+  - launch_IMPACT_promis_1366298-WILR_2.out
+  - launch_IMPACT_promis_1366298-WILR_3.out
+  - launch_IMPACT_promis_1366298-WILR_4.out
+  - launch_IMPACT_promis_1366415-WLR_0.out
+  - launch_IMPACT_promis_1366415-WLR_1.out
+  - launch_IMPACT_promis_1366415-WLR_2.out
+  - launch_IMPACT_promis_1366415-WLR_3.out
+  - launch_IMPACT_promis_1366415-WLR_4.out
+  - launch_IMPACT_promis_1366934-WL_0.out
+  - launch_IMPACT_promis_1366934-WL_1.out
+  - launch_IMPACT_promis_1366934-WL_2.out
+  - launch_IMPACT_promis_1366934-WL_3.out
+  - launch_IMPACT_promis_1366934-WL_4.out
+  - launch_IMPACT_promis_1367486-WR_0.out
+  - launch_IMPACT_promis_1367486-WR_1.out
+  - launch_IMPACT_promis_1367486-WR_2.out
+  - launch_IMPACT_promis_1367486-WR_3.out
+  - launch_IMPACT_promis_1367486-WR_4.out
+Files missing END marker: 0
+Files with no post-END metrics: 0
+
+Per-dataset ablation coverage
+------------------------------
+
+[postcovid]
+  Ablations found: BASE:5
+  BASE: rmse=5, mae=5, doa=5, pc-er=5, rm=5
+
+[promis]
+  Ablations found: BASE:5
+  BASE: rmse=5, mae=5, doa=5, pc-er=5, rm=5
+
+[portrait]
+  Ablations found: BASE:5
+  BASE: rmse=5, mae=5, doa=5, pc-er=5, rm=5
+
+[movielens]
+  Ablations found: BASE:5
+  BASE: rmse=5, mae=5, doa=5, pc-er=5, rm=5

@@ -2,9 +2,7 @@ import pandas
 from DeepMTP.utils.utils import generate_config
 from sklearn.metrics import r2_score
 import torch
-from cornac.data import Reader
-from cornac.eval_methods import BaseMethod
-from cornac.metrics import MAE, RMSE, RatingMetric
+
 import numpy as np
 import logging
 import warnings
@@ -43,6 +41,7 @@ def load_dataset(dataset_name : str) :
     i_fold = 0
     concept_map = json.load(open(f'../datasets/{dataset_name}/concept_map.json', 'r'))
     concept_map = {int(k):[int(x) for x in v] for k,v in concept_map.items()}
+    nb_modalities = torch.load(f'../datasets/{dataset_name}/nb_modalities.pkl', weights_only=True)
     metadata = json.load(open(f'../datasets/{dataset_name}/metadata.json', 'r'))
     train_quadruplets = pd.read_csv(f'../datasets/2-preprocessed_data/{dataset_name}_train_quadruples_vert_{i_fold}.csv',
                              encoding='utf-8').to_records(index=False,
@@ -58,9 +57,9 @@ def load_dataset(dataset_name : str) :
                                                          column_dtypes={'student_id': int, 'item_id': int,
                                                                         "correct": float,"dimension_id":int})
 
-    train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata)
-    valid_data = dataset.LoaderDataset(valid_quadruplets, concept_map, metadata)
-    test_data = dataset.LoaderDataset(test_quadruplets, concept_map, metadata)
+    train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata, nb_modalities)
+    valid_data = dataset.LoaderDataset(valid_quadruplets, concept_map, metadata,nb_modalities)
+    test_data = dataset.LoaderDataset(test_quadruplets, concept_map, metadata,nb_modalities)
 
 
     logs_train = train_data.raw_data_array[:,:3].cpu().numpy()
@@ -149,9 +148,10 @@ def test(dataset_name: str, config: dict):
 
     concept_map = json.load(open(f'../datasets/{dataset_name}/concept_map.json', 'r'))
     concept_map = {int(k): [int(x) for x in v] for k, v in concept_map.items()}
+    nb_modalities = torch.load(f'../datasets/{dataset_name}/nb_modalities.pkl', weights_only=True)
     metadata = json.load(open(f'../datasets/{dataset_name}/metadata.json', 'r'))
 
-    for i_fold in range(3,5):
+    for i_fold in range(5):
 
 
         train_quadruplets = pd.read_csv(
@@ -171,9 +171,9 @@ def test(dataset_name: str, config: dict):
                                          column_dtypes={'student_id': int, 'item_id': int,
                                                         "correct": float, "dimension_id": int})
 
-        train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata)
-        valid_data = dataset.LoaderDataset(valid_quadruplets, concept_map, metadata)
-        test_data = dataset.LoaderDataset(test_quadruplets, concept_map, metadata)
+        train_data = dataset.LoaderDataset(train_quadruplets, concept_map, metadata, nb_modalities)
+        valid_data = dataset.LoaderDataset(valid_quadruplets, concept_map, metadata, nb_modalities)
+        test_data = dataset.LoaderDataset(test_quadruplets, concept_map, metadata, nb_modalities)
 
         logs_train = train_data.raw_data_array[:, :3].cpu().numpy()
         logs_train[:, 2] = logs_train[:, 2] - 1
@@ -203,7 +203,7 @@ def test(dataset_name: str, config: dict):
                         encoding='utf-8').to_records(index=False, column_dtypes={'student_id': int, 'item_id': int,
                                                                                  "correct": float, "concept_id": int})
         concept_array, concept_lens = utils.preprocess_concept_map(concept_map)
-        train_dataloader = dataset.LoaderDataset(d, concept_map, metadata)
+        train_dataloader = dataset.LoaderDataset(d, concept_map, metadata,nb_modalities)
 
         # Dataset downloading for doa and rm
         warnings.filterwarnings("ignore", message="invalid value encountered in divide")
@@ -215,7 +215,7 @@ def test(dataset_name: str, config: dict):
             config['seed'] = seed
 
             config_DMTP = generate_config(num_epochs=config['num_epochs'], learning_rate=config['learning_rate'],
-                                          decay=config['lambda'], compute_mode=config['device'],
+                                          decay=config['lambda'], compute_mode="cuda:0",
                                           train_batchsize=config['batch_size'], val_batchsize=10000,
                                           patience=config['patience'],
                                           evaluate_train=True, evaluate_val=True, problem_mode="regression",

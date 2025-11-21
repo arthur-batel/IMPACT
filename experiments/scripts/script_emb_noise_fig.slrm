@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH --job-name=launch_noise_fig_postcovid
+#SBATCH --output=../preds_noise/%x_%A_%a.out  # %x=job-name, %A=array master ID, %a=task ID
+#SBATCH --error=../preds_noise/%x_%A_%a.err
+##SBATCH --constraint=v100
+#SBATCH --nodes=1
+#SBATCH --ntasks=1                  # one task per array element
+#SBATCH --gpus-per-task=1           # one GPU each
+#SBATCH --cpus-per-task=4
+#SBATCH --array=0-14
+#SBATCH --time=06:00:00
+#SBATCH --account=enh@v100
+
+module purge
+module load pytorch-gpu/py3/2.8.0
+
+# Derive fold & seed from SLURM_ARRAY_TASK_ID
+FOLD=$(( SLURM_ARRAY_TASK_ID / 3 ))   # integer division
+SEED=$(( SLURM_ARRAY_TASK_ID % 3 ))   # remainder → seed ∈ {0,1,2}
+
+echo "Running fold=$FOLD seed=$SEED"
+
+srun python emb_noise_fig.py postcovid 15 --i_fold $FOLD --seed $SEED

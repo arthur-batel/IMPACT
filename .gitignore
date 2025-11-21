@@ -8,4 +8,7 @@ experiment/datasets/__pycache__/
 experiment/datasets/data_utils/__pycache__/
 build/
 dist/
+experiments/predictions.zip
 *.egg-info/
+.*png
+*-checkpoint.py

@@ -1,0 +1,212 @@
+\begin{table*}[!htb]
+\centering
+    \resizebox{1\textwidth}{!}{%
+    \begin{tabular}{l|ccccc}
+    \hline 
+    Datasets &  RMSE & MAE & DOA & PC-ER & RM \\
+    \hline
+   & \multicolumn{5}{c}{\postcovid} \\ \hline
+    \method
+      & \textbf{0.2658 $\pm$ 0.0015}  
+      & \textbf{0.1602 $\pm$ 0.0031}  
+      & \textbf{0.7044 $\pm$ 0.0043}  
+      & \textbf{0.5047 $\pm$ 0.0208}  
+      & \textbf{0.5863 $\pm$ 0.0122}\\
+    Without init
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\mathcal{R}_{I}$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init and $\mathcal{R}_{I}$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\mathcal{R}_{I}$ and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init, $\mathcal{R}_{I}$ and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    \hline
+   & \multicolumn{5}{c}{\promis} \\ \hline
+    \method
+      & \textbf{0.1949 $\pm$ 0.0005}  
+      & \textbf{0.0976 $\pm$ 0.0002}  
+      & \textbf{0.8079 $\pm$ 0.0010}  
+      & \textbf{0.5701 $\pm$ 0.0009}  
+      & \textbf{0.6256 $\pm$ 0.0013}\\
+    Without init
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\mathcal{R}_{I}$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init and $\mathcal{R}_{I}$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\mathcal{R}_{I}$ and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init, $\mathcal{R}_{I}$ and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    \hline
+   & \multicolumn{5}{c}{\portrait} \\ \hline
+    \method
+      & \textbf{0.2765 $\pm$ 0.0017}  
+      & \textbf{0.1882 $\pm$ 0.0014}  
+      & \textbf{0.6463 $\pm$ 0.0027}  
+      & \textbf{0.4842 $\pm$ 0.0096}  
+      & \textbf{0.4932 $\pm$ 0.0098}\\
+    Without init
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\mathcal{R}_{I}$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init and $\mathcal{R}_{I}$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\mathcal{R}_{I}$ and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init, $\mathcal{R}_{I}$ and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    \hline
+   & \multicolumn{5}{c}{\movielens} \\ \hline
+    \method
+      & \textbf{0.2225 $\pm$ 0.0003}  
+      & \textbf{0.1475 $\pm$ 0.0002}  
+      & \textbf{0.6569 $\pm$ 0.0004}  
+      & \textbf{0.3728 $\pm$ 0.0052}  
+      & \textbf{0.4416 $\pm$ 0.0037}\\
+    Without init
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\mathcal{R}_{I}$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init and $\mathcal{R}_{I}$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without $\mathcal{R}_{I}$ and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    Without init, $\mathcal{R}_{I}$ and $\lossintmul$
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash  
+      & \textemdash\\
+    \hline
+    \end{tabular}
+    }
+ \caption{Ablation study: prediction performances (RMSE, MAE) and embedding-quality metrics (DOA, PC-ER, RM). Bold numbers indicate the best mean and any result within that best method’s standard deviation.}
+ \label{tab:ablation_study2}
+\end{table*}

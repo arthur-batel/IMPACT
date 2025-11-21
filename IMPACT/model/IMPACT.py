@@ -2,6 +2,8 @@ import functools
 import os
 from collections import defaultdict
 
+from deprecated import deprecated
+
 from torch.masked import MaskedTensor
 import torch.nn as nn
 
@@ -115,10 +117,10 @@ class CoVWeightingLoss(nn.Module):
 @torch.jit.export
 class IMPACTModel(nn.Module):
     '''
-    Graph Convolutional Cognitive Diagnostic
+    Interpretable Multi-Modal Cognitive Diagnostic Model
     '''
 
-    def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, train_data: Dataset,
+    def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
                  valid_data: Dataset, nb_mod_max: int = 12, load_params: bool = False):
         super(IMPACTModel, self).__init__()
         self.user_n: int = user_n
@@ -171,11 +173,11 @@ class IMPACTModel(nn.Module):
             item_indices = item_indices.reshape(-1)  # [nb_items_in_concept * nb_mod_max]
 
             # Repeat response values for each item
-            response_values_repeated = response_values.repeat(len(items)).unsqueeze(
-                1)  # [nb_mod*nb_items_in_concept*]
+            response_values_repeated = response_values.repeat(len(items))  # [nb_mod*nb_items_in_concept,1]
+
 
             # Set the embeddings at the concept dimension to the response values
-            self.item_response_embeddings.weight.data[item_indices, :] = response_values_repeated
+            self.item_response_embeddings.weight.data[item_indices, concept_index] = response_values_repeated
 
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
@@ -186,50 +188,49 @@ class IMPACTModel(nn.Module):
         self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1, device=self.device))
         self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2, device=self.device))
 
+
+        
         if not load_params:
+
+            self.nb_modalities = nb_modalities
 
             R_t = self.R.clone()
             R_t[R_t == 0] = valid_data.log_tensor[R_t == 0]
             R_t = R_t.T - 1
 
             for item_i, logs in enumerate(R_t):
-                unique_logs = torch.unique(logs)
-                delta_min = torch.min(
-                    torch.abs(unique_logs.unsqueeze(0) - unique_logs.unsqueeze(1)) + torch.eye(unique_logs.shape[0],
-                                                                                               device=self.device))
 
-                if delta_min < 1 / (self.nb_mod_max - 1):
-                    self.nb_modalities[item_i] = self.nb_mod_max
-                else:
-                    self.nb_modalities[item_i] = (torch.round(1 / delta_min) + 1).long()
+                if self.nb_modalities[item_i] > self.nb_mod_max :
+                    self.nb_modalities[item_i] = self.nb_mod_max  
 
                 self.mask[item_i, torch.arange(1, self.nb_modalities[item_i] + 1)] = 0
                 self.diff_mask[item_i, torch.arange(self.nb_modalities[item_i] + 1)] = 1
                 self.diff_mask2[item_i, torch.arange(self.nb_modalities[item_i])] = 1
 
-            self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
-                1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1, persistent=False)
-            self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities), persistent=False)
+
+            self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities), persistent=False) # Log tensor with modalities replacing logs (including sentinels)
         else :
-            self.register_buffer('in_idx', None, persistent=False)
-            self.register_buffer('ir_idx', None, persistent=False)
+
+            self.register_buffer('ir_idx', None, persistent=False) # Log tensor with modalities replacing logs (including sentinels)
         # Indexes precomputing
         self.register_buffer('im_idx',
                              torch.arange(self.item_n, device=self.device).unsqueeze(
                                  1) * self.nb_mod_max_plus_sent + torch.arange(
                                  self.nb_mod_max_plus_sent, device=self.device).expand(self.item_n,
-                                                                                         self.nb_mod_max_plus_sent), persistent=False)
+                                                                                         self.nb_mod_max_plus_sent), persistent=False) # All item-response indices (for comparison)
+        self.register_buffer('in_idx', torch.arange(self.item_n, device=self.device).unsqueeze(
+            1) * self.nb_mod_max_plus_sent + self.nb_modalities.unsqueeze(1) + 1, persistent=False) # Right sentinels indices
         self.register_buffer('i0_idx',
-                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent, persistent=False)
+                             torch.arange(self.item_n, device=self.device).unsqueeze(1) * self.nb_mod_max_plus_sent, persistent=False) # Left sentinels indices
 
-    def get_embeddings(self, user_ids, item_ids, concept_ids):
+    def get_embeddings(self, users_id, items_id, concepts_id):
         # User embeddings
-        u_emb = self.users_emb(user_ids)  # [batch_size, embedding_dim]
+        u_emb = self.users_emb(users_id)  # [batch_size, embedding_dim]
 
         # Compute item-response indices
-        im_idx = self.im_idx[item_ids]  # [batch_size, nb_mod]
-        i0_idx = self.i0_idx[item_ids]  # [batch_size, nb_mod]
-        in_idx = self.in_idx[item_ids]  # [batch_size, nb_mod]
+        im_idx = self.im_idx[items_id]  # [batch_size, nb_mod]
+        i0_idx = self.i0_idx[items_id]  # [batch_size, nb_mod]
+        in_idx = self.in_idx[items_id]  # [batch_size, nb_mod]
 
         # Item-Response embeddings
         im_emb_prime = self.item_response_embeddings(im_idx)  # [batch_size, nb_mod, embedding_dim]
@@ -238,31 +239,36 @@ class IMPACTModel(nn.Module):
 
         return u_emb, im_emb_prime, i0_emb_prime, in_emb_prime, None
 
-    def forward(self, user_ids, item_ids, concept_ids):
+    def forward(self, users_id, items_id, concepts_id):
         # I
-        im_idx = self.im_idx[item_ids]
+        im_idx = self.im_idx[items_id]
         im_emb = self.item_response_embeddings(im_idx)
 
         # E
-        u_emb = self.users_emb(user_ids)
+        u_emb = self.users_emb(users_id)
 
         # p_uim
         diff = u_emb.unsqueeze(1) - im_emb
         p_uim = torch.sum(diff ** 2, dim=2)
 
-        return mod_to_resp(torch.argmin(p_uim + self.mask[item_ids, :], dim=1), self.nb_modalities[item_ids])
+        return mod_to_resp(torch.argmin(p_uim + self.mask[items_id, :], dim=1), self.nb_modalities[items_id])
 
-    def get_regularizer(self):
-        return self.users_emb.weight.norm().pow(2) + self.item_response_embeddings.weight.norm().pow(
+    def get_regularizer(self,unique_users, unique_items):
+        im_idx = self.im_idx[unique_items]  # [batch_size, nb_mod]
+        i0_idx = self.i0_idx[unique_items]  # [batch_size, nb_mod]
+        in_idx = self.in_idx[unique_items]
+        return self.users_emb.weight[unique_users].norm().pow(2) + self.item_response_embeddings.weight[im_idx].norm().pow(
+            2) + self.item_response_embeddings.weight[i0_idx].norm().pow(
+            2)+ self.item_response_embeddings.weight[in_idx].norm().pow(
             2)
-
+@deprecated
 @torch.jit.export
 class IMPACTModel_low_mem(nn.Module):
     '''
-    Graph Convolutional Cognitive Diagnostic
+    Interpretable Multi-Modal Cognitive Diagnostic Model
     '''
 
-    def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, train_data: Dataset,
+    def __init__(self, user_n: int, item_n: int, concept_n: int, concept_map: dict, nb_modalities:torch.tensor, train_data: Dataset,
                  valid_data: Dataset,
                  d_in: int = 3, nb_mod_max: int = 12, load_params: bool = False):
         super(IMPACTModel_low_mem, self).__init__()
@@ -365,14 +371,14 @@ class IMPACTModel_low_mem(nn.Module):
 
         self.register_buffer('ir_idx', resp_to_mod(self.R, self.nb_modalities), persistent=False)
 
-    def get_embeddings(self, user_ids, item_ids, concept_ids):
+    def get_embeddings(self, users_id, items_id, concepts_id):
         # User embeddings
-        u_emb = self.users_emb(user_ids)  # [batch_size, embedding_dim]
+        u_emb = self.users_emb(users_id)  # [batch_size, embedding_dim]
 
         # Compute item-response indices
-        im_idx = self.im_idx[item_ids]  # [batch_size, nb_mod]
-        i0_idx = self.i0_idx[item_ids]  # [batch_size, nb_mod]
-        in_idx = self.in_idx[item_ids]  # [batch_size, nb_mod]
+        im_idx = self.im_idx[items_id]  # [batch_size, nb_mod]
+        i0_idx = self.i0_idx[items_id]  # [batch_size, nb_mod]
+        in_idx = self.in_idx[items_id]  # [batch_size, nb_mod]
 
         # Item-Response embeddings
         im_emb_prime = self.item_response_embeddings(im_idx)  # [batch_size, nb_mod, embedding_dim]
@@ -380,7 +386,7 @@ class IMPACTModel_low_mem(nn.Module):
         in_emb_prime = self.item_response_embeddings(in_idx)
 
         # Compute negative squared Euclidean distances (p_uir)
-        W_t = self.W[concept_ids]
+        W_t = self.W[concepts_id]
 
         return u_emb, im_emb_prime, i0_emb_prime, in_emb_prime, W_t
 
@@ -388,23 +394,23 @@ class IMPACTModel_low_mem(nn.Module):
         return self.users_emb.weight.norm().pow(2) + self.item_response_embeddings.weight.norm().pow(
             2) + self.W.data.norm().pow(2)
 
-    def forward(self, user_ids, item_ids, concept_ids):
+    def forward(self, users_id, items_id, concepts_id):
         # W
-        W_t = self.W[concept_ids]
+        W_t = self.W[concepts_id]
 
         # I
-        im_idx = self.im_idx[item_ids]
+        im_idx = self.im_idx[items_id]
         im_emb_prime = self.item_response_embeddings(im_idx)
         im_emb = torch.bmm(im_emb_prime, W_t)
 
         # E
-        u_emb = self.users_emb(user_ids)
+        u_emb = self.users_emb(users_id)
 
         # p_uim
         diff = u_emb.unsqueeze(1) - im_emb
         p_uim = torch.sum(diff ** 2, dim=2)
 
-        return mod_to_resp(torch.argmin(p_uim + self.mask[item_ids, :], dim=1), self.nb_modalities[item_ids])
+        return mod_to_resp(torch.argmin(p_uim + self.mask[items_id, :], dim=1), self.nb_modalities[items_id])
 
 class IMPACT(AbstractModel):
 
@@ -414,13 +420,12 @@ class IMPACT(AbstractModel):
 
     def init_model(self, train_data: Dataset, valid_data: Dataset):
         self.concept_map = train_data.concept_map
-
         if self.config['low_mem'] == True:
-            self.model = IMPACTModel_low_mem(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
+            self.model = IMPACTModel_low_mem(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map, train_data.nb_modalities,
                                  train_data, valid_data, self.config['d_in'], self.config['num_responses'], load_params=self.config['load_params'])
             self.loss = custom_loss_low_mem
         else:
-            self.model = IMPACTModel(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map,
+            self.model = IMPACTModel(train_data.n_users, train_data.n_items, train_data.n_categories, self.concept_map, train_data.nb_modalities,
                                  train_data, valid_data, self.config['num_responses'], load_params=self.config['load_params'])
             self.loss = custom_loss
 
@@ -429,8 +434,6 @@ class IMPACT(AbstractModel):
     def _load_model_params(self, temporary=True) -> None:
         super()._load_model_params(temporary)
 
-        self.model.in_idx = torch.arange(self.model.item_n, device=self.model.device).unsqueeze(
-            1) * self.model.nb_mod_max_plus_sent + self.model.nb_modalities.unsqueeze(1) + 1
         self.model.ir_idx = resp_to_mod(self.model.R, self.model.nb_modalities)
         self.model.to(self.config['device'])
 
@@ -447,26 +450,28 @@ class IMPACT(AbstractModel):
         loss_list = []
         pred_list = []
         label_list = []
+        nb_modalities_list = []
 
         for data_batch in valid_dataloader:
-            user_ids = data_batch[:, 0].long()
-            item_ids = data_batch[:, 1].long()
-
+            users_id = data_batch[:, 0].long()
+            items_id = data_batch[:, 1].long()
+            nb_modalities = valid_dataloader.dataset.nb_modalities[items_id]
             labels = data_batch[:, 2]
-            concept_ids = data_batch[:, 3].long()
+            concepts_id = data_batch[:, 3].long()
 
-            preds = self.model(user_ids, item_ids, concept_ids)
-            total_loss = self._compute_loss(user_ids, item_ids, concept_ids, labels)
+            preds = self.model(users_id, items_id, concepts_id)
+            total_loss = self._compute_loss(users_id, items_id, concepts_id, labels)
             loss_list.append(total_loss.detach())
-
+            nb_modalities_list.append(nb_modalities)
             pred_list.append(preds)
             label_list.append(labels)
 
         pred_tensor = torch.cat(pred_list)
         label_tensor = torch.cat(label_list)
+        nb_modalities_tensor = torch.cat(nb_modalities_list)
         mean_loss = torch.mean(torch.stack(loss_list))
 
-        return mean_loss, self.valid_metric(pred_tensor, label_tensor)
+        return mean_loss, self.valid_metric(pred_tensor, label_tensor, nb_modalities_tensor)
 
     def _compute_loss(self, users_id, items_id, concepts_id, labels):
         device = self.config['device']
@@ -486,7 +491,9 @@ class IMPACT(AbstractModel):
                                  users_id=users_id, items_id=items_id,
                                  concepts_id=concepts_id, R=self.model.R, users_emb=self.model.users_emb.weight)
 
-        R = self.model.get_regularizer()
+        unique_users =  torch.unique(users_id)
+        unique_items = torch.unique(items_id)
+        R = self.model.get_regularizer(unique_users, unique_items)
 
         # Stack losses into a tensor
         losses = torch.stack([L1, L3])  # Shape: (4,)
@@ -495,7 +502,7 @@ class IMPACT(AbstractModel):
         weights = self.L_W.compute_weights(losses)
 
         # Compute total loss
-        total_loss = torch.dot(weights, losses) + beta * L2 + lambda_param * R
+        total_loss = (1.5-beta) * torch.dot(weights, losses) + beta * L2 + lambda_param * R
 
         return total_loss
 
@@ -620,13 +627,12 @@ def custom_loss(u_emb: torch.Tensor,
     L2 = torch.where(diff_mask2 == 1, F.softplus(diffs3 - diffs2), torch.zeros_like(diff_mask2)).mean(dim=1).mean()
 
     ##### L3
-    R_t = R[users_id][:, items_id].t()
-    b = (R[users_id, items_id].unsqueeze(1) - R_t)
+    R_t = R[users_id][:, items_id].t() # responses to compare
+    b = (R[users_id, items_id].unsqueeze(1) - R_t) # batch responses
 
     b_diag = b.abs()
 
-    v_mask = concepts_id.unsqueeze(0).eq(concepts_id.unsqueeze(1))  # same concept checking
-    u_mask = v_mask & (b_diag > 0.0) & (R_t >= 1.0)   # b_diag > 0 : not exactly similar responses for which we cannot say anything; R_t >= 1.0 : comparison with not null responses only
+    u_mask = (b_diag > 0.0) & (R_t >= 1.0)   # b_diag > 0 : not exactly similar responses for which we cannot say anything; R_t >= 1.0 : comparison with not null responses only
 
     indices = torch.nonzero(u_mask)
     u_base_idx = indices[:, 0]

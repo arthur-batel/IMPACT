@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH --job-name=launch_NMF_movielens
+#SBATCH --output=../preds/%x_%A_%a.out  # %x=job-name, %A=array master ID, %a=task ID
+#SBATCH --error=../preds/%x_%A_%a.err
+##SBATCH --constraint=v100
+#SBATCH --nodes=1
+#SBATCH --ntasks=1                  # one task per array element
+#SBATCH --gpus-per-task=1           # one GPU each
+#SBATCH --cpus-per-task=4
+#SBATCH --time=04:00:00
+#SBATCH --account=enh@v100
+
+module purge
+module load pytorch-gpu/py3/2.8.0
+
+srun python launch_NMF.py movielens

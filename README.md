@@ -1,10 +1,13 @@
 
 <p align="center"><img src="figs/IMPACT_logo.png" alt="logo" height="300"/></p>
 
-<h1 align="center"> An interpretable model for multi-target predictions with multi-class outputs </h1>
+<h1 align="center"> An interpretable model for multi-target predictions with ordinal outputs </h1>
 
 ---
-Welcome to the official repository for IMPACT – a novel, interpretable model designed for Multi-Target Predictions (MTP) with multi-class outputs. IMPACT extends the Cognitive Diagnosis Bayesian Personalized Ranking framework to effectively handle multi-class prediction tasks. Built primarily in Python using PyTorch, this repository includes the four datasets featured in our publication, along with Jupyter notebooks that allow you to reproduce our experiments and conduct your own analyses. 
+Welcome to the official repository for IMPACT – a novel, interpretable model designed for Multi-Target Predictions (MTP) with ordinal outputs. IMPACT extends the Cognitive Diagnosis Bayesian Personalized Ranking framework to effectively handle ordinal prediction tasks. Built primarily in Python using PyTorch, this repository includes the four datasets featured in our publication, along with Jupyter notebooks that allow you to reproduce our experiments and conduct your own analyses.
+
+Preprocessed datasets and predictions are automatically downloaded by the Makefile.
+
 
 ## Installing IMPACT
 Directly from pip 
@@ -42,7 +45,7 @@ config = utils.generate_eval_config(dataset_name="postcovid", learning_rate=0.02
                                     valid_metric='rmse', pred_metrics=['rmse', 'mae'], profile_metrics=['doa', 'pc-er'])
 
 # Read the dataset and the metadata -------------
-concept_map, train_data, valid_data, test_data = utils.prepare_dataset(config, i_fold=0)
+train_data, valid_data, test_data = utils.prepare_dataset(config, i_fold=0)
 
 # Train the model --------------------------------
 algo = model.IMPACT(**config)
@@ -88,5 +91,7 @@ EPITA Lyon, EPITA Research Laboratory (LRE) FR
 
 Céline Robardet,
 celine.robardet@insa-lyon.fr,
-INSA Lyon, LIRIS UMR 5205 FR 
+
+INSA Lyon, LIRIS UMR 5205 FR
+
 

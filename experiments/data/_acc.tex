@@ -1,0 +1,83 @@
+\begin{table*}[!htb]
+\centering
+\resizebox{1\textwidth}{!}{%
+\begin{tabular}{l|ccc}
+\hline
+Datasets & MI_ACC & MI_ACC_W1 & MI_ACC_W2 \\
+\hline
+ & \multicolumn{3}{c}{\postcovid} \\ \hline
+\method
+  & \textbf{0.5620 $\pm$ 0.0116} & \textbf{0.8947 $\pm$ 0.0014} & \textbf{0.9795 $\pm$ 0.0017}\\
+Without init
+  & \textbf{0.5582 $\pm$ 0.0095} & 0.8909 $\pm$ 0.0042 & 0.9775 $\pm$ 0.0018\\
+Without $\mathcal{R}_{I}$
+  & \textbf{0.5510 $\pm$ 0.0208} & 0.8908 $\pm$ 0.0063 & 0.9776 $\pm$ 0.0026\\
+Without $\lossintmul$
+  & 0.5306 $\pm$ 0.0192 & 0.8894 $\pm$ 0.0050 & \textbf{0.9780 $\pm$ 0.0013}\\
+Without init and $\mathcal{R}_{I}$
+  & \textbf{0.5622 $\pm$ 0.0143} & 0.8906 $\pm$ 0.0042 & \textbf{0.9778 $\pm$ 0.0010}\\
+Without init and $\lossintmul$
+  & \textbf{0.5584 $\pm$ 0.0076} & 0.8869 $\pm$ 0.0021 & 0.9762 $\pm$ 0.0015\\
+Without $\mathcal{R}_{I}$ and $\lossintmul$
+  & 0.5408 $\pm$ 0.0035 & 0.8913 $\pm$ 0.0017 & 0.9777 $\pm$ 0.0014\\
+Without init, $\mathcal{R}_{I}$ and $\lossintmul$
+  & \textbf{0.5582 $\pm$ 0.0070} & 0.8887 $\pm$ 0.0024 & 0.9769 $\pm$ 0.0020\\
+\hline
+ & \multicolumn{3}{c}{\promis} \\ \hline
+\method
+  & \textbf{0.6846 $\pm$ 0.0006} & \textbf{0.9440 $\pm$ 0.0006} & \textbf{0.9899 $\pm$ 0.0002}\\
+Without init
+  & \textbf{0.6842 $\pm$ 0.0012} & \textbf{0.9441 $\pm$ 0.0003} & \textbf{0.9899 $\pm$ 0.0001}\\
+Without $\mathcal{R}_{I}$
+  & \textbf{0.6839 $\pm$ 0.0008} & 0.9433 $\pm$ 0.0003 & 0.9898 $\pm$ 0.0001\\
+Without $\lossintmul$
+  & 0.6784 $\pm$ 0.0023 & 0.9403 $\pm$ 0.0003 & 0.9888 $\pm$ 0.0001\\
+Without init and $\mathcal{R}_{I}$
+  & \textbf{0.6844 $\pm$ 0.0009} & \textbf{0.9440 $\pm$ 0.0005} & \textbf{0.9899 $\pm$ 0.0001}\\
+Without init and $\lossintmul$
+  & 0.6784 $\pm$ 0.0009 & 0.9400 $\pm$ 0.0004 & 0.9888 $\pm$ 0.0001\\
+Without $\mathcal{R}_{I}$ and $\lossintmul$
+  & 0.6790 $\pm$ 0.0019 & 0.9397 $\pm$ 0.0003 & 0.9886 $\pm$ 0.0002\\
+Without init, $\mathcal{R}_{I}$ and $\lossintmul$
+  & 0.6788 $\pm$ 0.0007 & 0.9405 $\pm$ 0.0005 & 0.9889 $\pm$ 0.0002\\
+\hline
+ & \multicolumn{3}{c}{\portrait} \\ \hline
+\method
+  & 0.1043 $\pm$ 0.0014 & 0.1636 $\pm$ 0.0026 & 0.2053 $\pm$ 0.0034\\
+Without init
+  & 0.1038 $\pm$ 0.0007 & 0.1638 $\pm$ 0.0010 & 0.2051 $\pm$ 0.0012\\
+Without $\mathcal{R}_{I}$
+  & 0.1042 $\pm$ 0.0015 & 0.1641 $\pm$ 0.0023 & 0.2060 $\pm$ 0.0037\\
+Without $\lossintmul$
+  & \textbf{0.1079 $\pm$ 0.0019} & 0.1677 $\pm$ 0.0033 & \textbf{0.2096 $\pm$ 0.0036}\\
+Without init and $\mathcal{R}_{I}$
+  & \textbf{0.1071 $\pm$ 0.0016} & \textbf{0.1695 $\pm$ 0.0016} & \textbf{0.2127 $\pm$ 0.0034}\\
+Without init and $\lossintmul$
+  & 0.1029 $\pm$ 0.0019 & 0.1619 $\pm$ 0.0033 & 0.2032 $\pm$ 0.0046\\
+Without $\mathcal{R}_{I}$ and $\lossintmul$
+  & \textbf{0.1064 $\pm$ 0.0013} & 0.1658 $\pm$ 0.0023 & 0.2079 $\pm$ 0.0033\\
+Without init, $\mathcal{R}_{I}$ and $\lossintmul$
+  & \textbf{0.1071 $\pm$ 0.0020} & \textbf{0.1689 $\pm$ 0.0034} & \textbf{0.2116 $\pm$ 0.0043}\\
+\hline
+ & \multicolumn{3}{c}{\movielens} \\ \hline
+\method
+  & 0.4991 $\pm$ 0.0006 & \textbf{0.9216 $\pm$ 0.0004} & \textbf{0.9901 $\pm$ 0.0002}\\
+Without init
+  & 0.4880 $\pm$ 0.0012 & 0.9156 $\pm$ 0.0009 & 0.9888 $\pm$ 0.0002\\
+Without $\mathcal{R}_{I}$
+  & 0.4948 $\pm$ 0.0004 & 0.9196 $\pm$ 0.0009 & 0.9896 $\pm$ 0.0003\\
+Without $\lossintmul$
+  & \textbf{0.5022 $\pm$ 0.0011} & \textbf{0.9217 $\pm$ 0.0005} & 0.9899 $\pm$ 0.0002\\
+Without init and $\mathcal{R}_{I}$
+  & 0.4944 $\pm$ 0.0009 & 0.9191 $\pm$ 0.0012 & 0.9897 $\pm$ 0.0002\\
+Without init and $\lossintmul$
+  & 0.4938 $\pm$ 0.0009 & 0.9178 $\pm$ 0.0011 & 0.9894 $\pm$ 0.0002\\
+Without $\mathcal{R}_{I}$ and $\lossintmul$
+  & \textbf{0.5016 $\pm$ 0.0011} & \textbf{0.9213 $\pm$ 0.0007} & 0.9897 $\pm$ 0.0001\\
+Without init, $\mathcal{R}_{I}$ and $\lossintmul$
+  & 0.4984 $\pm$ 0.0008 & 0.9191 $\pm$ 0.0007 & 0.9894 $\pm$ 0.0002\\
+\hline
+\end{tabular}}
+\caption{Ablation results: mastery metrics (Accuracy, Accuracy±1, Accuracy±2).}
+\label{tab:ablation_accuracy}
+\end{table*}
