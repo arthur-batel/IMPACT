@@ -8,6 +8,7 @@ Welcome to the official repository for IMPACT – a novel, interpretable model d
 
 Preprocessed datasets and predictions are automatically downloaded by the Makefile.
 
+
 ## Installing IMPACT
 Directly from pip 
 - with dependencies :
@@ -90,5 +91,7 @@ EPITA Lyon, EPITA Research Laboratory (LRE) FR
 
 Céline Robardet,
 celine.robardet@insa-lyon.fr,
+
 INSA Lyon, LIRIS UMR 5205 FR
+
 
