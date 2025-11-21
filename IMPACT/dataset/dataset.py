@@ -4,7 +4,6 @@ from collections import defaultdict, deque
 import torch
 from torch.utils import data
 
-
 class Dataset(object):
 
     def __init__(self, data, concept_map, metadata, nb_modalities):
