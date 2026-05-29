@@ -3,10 +3,10 @@
 install: check_conda
 	wget -nc --content-disposition "https://zenodo.org/record/14756042/files/data_archive.zip?download=1" -P ./experiments/datasets
 	wget -nc --content-disposition "https://zenodo.org/record/14764011/files/embs_archive.zip?download=1" -P ./experiments/embs
-    wget -nc --content-disposition "https://zenodo.org/records/17672438/files/predictions.zip?download=1" -P ./experiments/
-	unzip -n ./experiments/datasets/data_archive.zip -d ./experiments/datasets/
-	unzip -n ./experiments/embs/embs_archive.zip -d ./experiments/embs/
-    unzip -n ./experiments/predictions.zip -d ./experiments/
+	wget -nc --content-disposition "https://zenodo.org/records/17672438/files/predictions.zip?download=1" -P ./experiments/
+	python -c "import zipfile; zipfile.ZipFile('./experiments/datasets/data_archive.zip').extractall('./experiments/datasets/')"
+	python -c "import zipfile; zipfile.ZipFile('./experiments/embs/embs_archive.zip').extractall('./experiments/embs/')"
+	python -c "import zipfile; zipfile.ZipFile('./experiments/predictions.zip').extractall('./experiments/')"
 	conda init
 	conda env create -f environment.yaml -n impact-env \
   || conda env update -f environment.yaml -n impact-env;
