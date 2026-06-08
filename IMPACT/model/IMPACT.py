@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import functools
 import os
 from collections import defaultdict
@@ -72,7 +73,7 @@ class CoVWeightingLoss(nn.Module):
             prev_mean_L = self.mean_L.clone()
             self.mean_L = self.mean_L + delta / self.t
 
-            # Compute loss ratios ℓ_t = L_t / mean_{L_{t-1}}
+            # Compute loss ratios l_t = L_t / mean_{L_{t-1}}
             # Avoid division by zero by setting ratios to zero where prev_mean_L == 0
             l = torch.where(prev_mean_L != 0, L / prev_mean_L, torch.zeros_like(L))
 
@@ -86,7 +87,7 @@ class CoVWeightingLoss(nn.Module):
             # Compute standard deviation
             std = torch.sqrt(self.M2 / (self.t - 1))
 
-            # Compute coefficient of variation c_l = σ_ℓ / mean_ℓ
+            # Compute coefficient of variation c_l = std_l / mean_l
             # Avoid division by zero by setting c_l to zero where mean_l == 0
             c_l = torch.where(
                 self.mean_l != 0,
@@ -94,7 +95,7 @@ class CoVWeightingLoss(nn.Module):
                 torch.zeros_like(self.mean_l)
             )
 
-            # Normalize coefficients to get weights α_i
+            # Normalize coefficients to get weights alpha_i
             z = torch.sum(c_l)
 
             if z > 0:
