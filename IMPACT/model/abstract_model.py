@@ -1050,7 +1050,6 @@ def macro_recall(y_true, y_pred, nb_modalities):
         actual_positives = torch.sum(y_true == cls).float()
         if actual_positives > 0:
             recall_tensor[i] = true_positives / actual_positives
-    print('actual_tensor : '+str(recall_tensor))
     return recall_tensor.mean()
 
 
