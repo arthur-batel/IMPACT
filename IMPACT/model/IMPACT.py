@@ -185,9 +185,9 @@ class IMPACTModel(nn.Module):
 
         self.register_buffer('nb_modalities',
                              torch.zeros(self.item_n, dtype=torch.long, device=self.device))  # without sentinels
-        self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent, device=self.device) * float('inf'))
-        self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1, device=self.device))
-        self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2, device=self.device))
+        self.register_buffer('mask', torch.ones(self.item_n, self.nb_mod_max_plus_sent, device=self.device) * float('inf')) # [item_n,nb_mod_max_plus_sent] : For forward(), infinity everywhere, zero at item's modalities' (indices+1) for sentinels
+        self.register_buffer('diff_mask', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 1, device=self.device)) # [item_n,nb_mod_max_plus_sent-1] : For L1, zero everywhere, one where pairwise comparison are done (including with sentinels)
+        self.register_buffer('diff_mask2', torch.zeros(self.item_n, self.nb_mod_max_plus_sent - 2, device=self.device)) # [item_n,nb_mod_max_plus_sent-2] : For L2, zero everywhere, one where pairwise comparison are done (exclusing one sentinels)
 
 
         
