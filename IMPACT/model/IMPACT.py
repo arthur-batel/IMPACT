@@ -159,12 +159,12 @@ class IMPACTModel(nn.Module):
                 (self.R[:, c_list].sqrt().sum(dim=1) / (torch.sum(self.R[:, c_list] != 0, dim=1) + 1e-12))
             )
 
-        response_values = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.device)
+        resps_value_incl_sent = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.device) # [nb_mod+sent]
         for concept_index, items in enumerate(k2q.values()):
             # Convert items to a tensor
             items = torch.tensor(list(items), dtype=torch.long, device=self.device)
 
-            # Compute item-response indices for all responses
+            # Compute item-response indices for all response logs
             # item_indices shape: [nb_items_in_concept, nb_responses]
             item_indices = items.unsqueeze(1) * self.nb_mod_max_plus_sent + torch.arange(self.nb_mod_max_plus_sent,
                                                                                          device=self.device).unsqueeze(
@@ -174,11 +174,11 @@ class IMPACTModel(nn.Module):
             item_indices = item_indices.reshape(-1)  # [nb_items_in_concept * nb_mod_max]
 
             # Repeat response values for each item
-            response_values_repeated = response_values.repeat(len(items))  # [nb_mod*nb_items_in_concept,1]
+            resps_value_incl_sent_repeated = resps_value_incl_sent.repeat(len(items))  # [(nb_mod+2)*nb_items_in_concept,1]
 
 
             # Set the embeddings at the concept dimension to the response values
-            self.item_response_embeddings.weight.data[item_indices, concept_index] = response_values_repeated
+            self.item_response_embeddings.weight.data[item_indices, concept_index] = resps_value_incl_sent_repeated
 
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
@@ -312,7 +312,7 @@ class IMPACTModel_low_mem(nn.Module):
                 (self.R[:, c_list].sqrt().sum(dim=1) / (torch.sum(self.R[:, c_list] != 0, dim=1) + 1e-12))
             )
 
-        response_values = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.device)
+        resps_value_incl_sent = torch.linspace(1, 2, steps=self.nb_mod_max_plus_sent, device=self.device)
         for concept_index, items in enumerate(k2q.values()):
             # Convert items to a tensor
             items = torch.tensor(list(items), dtype=torch.long, device=self.device)
@@ -327,11 +327,11 @@ class IMPACTModel_low_mem(nn.Module):
             item_indices = item_indices.reshape(-1)  # [nb_items_in_concept * nb_mod_max]
 
             # Repeat response values for each item
-            response_values_repeated = response_values.repeat(len(items)).unsqueeze(
+            resps_value_incl_sent_repeated = resps_value_incl_sent.repeat(len(items)).unsqueeze(
                 1)  # [nb_mod*nb_items_in_concept*]
 
             # Set the embeddings at the concept dimension to the response values
-            self.item_response_embeddings.weight.data[item_indices, :] = response_values_repeated
+            self.item_response_embeddings.weight.data[item_indices, :] = resps_value_incl_sent_repeated
 
         # ------ None learnable parameters
         # Modality mask creation + mod_per_item
